@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Belgo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Rubik:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-screen chat. Quiet white page; the only colour is the flag figure who lives on the chat bar. */
+:root{
+  --bg:#ffffff; --surface:#f2f2ef; --surface-2:#e7e7e2; --line:#d9d9d3;
+  --ink:#16140f; --muted:#6a675f;
+  --f-black:#16140f; --f-yellow:#fdda24; --f-red:#ef3340;
+  --outline:#16140f; --danger:#c8202d;
+  --user-bg:#16140f; --user-fg:#ffffff;
+  --display:"Baloo 2","Rubik",system-ui,sans-serif;
+  --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#121110; --surface:#1f1e1b; --surface-2:#2a2925; --line:#37352f;
+    --ink:#f3f1ea; --muted:#a09c91;
+    --outline:#77736a; --danger:#ff6b74;
+    --user-bg:#fdda24; --user-fg:#16140f;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--f-red);outline-offset:2px}
+[hidden]{display:none!important}
+
+.app{height:100dvh;display:flex;flex-direction:column;max-width:760px;margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+header{display:flex;align-items:center;gap:10px;padding-block:10px}
+h1{font:800 28px/1 var(--display);margin:0;letter-spacing:-.01em}
+.pill{display:inline-flex;align-items:center;gap:6px;min-width:0;padding:4px 10px;border-radius:99px;background:var(--surface);
+  font-size:12.5px;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.pill[data-k="ready"] i{background:#2e9e5b}
+.pill[data-k="busy"] i{background:var(--f-yellow);animation:blink 1s infinite}
+.pill[data-k="err"] i{background:var(--danger)}
+@keyframes blink{50%{opacity:.3}}
+.icon-btn{margin-left:auto;flex:none;width:40px;height:40px;border:0;border-radius:50%;background:transparent;display:grid;place-items:center}
+.icon-btn:hover{background:var(--surface)}
+.icon-btn svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+#log{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:8px 0 104px;overscroll-behavior:contain}
+.msg{max-width:88%;min-width:0;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--user-bg);color:var(--user-fg);padding:9px 14px;border-radius:18px 18px 4px 18px;white-space:pre-wrap}
+.msg.bot{align-self:flex-start;background:var(--surface);padding:10px 14px;border-radius:18px 18px 18px 4px}
+.msg.bot p{margin:0 0 .6em}.msg.bot p:last-child{margin:0}
+.msg.bot pre{margin:.5em 0;padding:10px 12px;background:var(--surface-2);border-radius:8px;overflow-x:auto;font:13px/1.45 var(--mono)}
+.msg.bot code{font:13px var(--mono);background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.msg.bot pre code{background:none;padding:0}
+.note{align-self:center;font-size:13px;color:var(--muted);text-align:center;max-width:90%}
+.note.err{color:var(--danger)}
+
+.setup{align-self:stretch;border:1.5px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.setup h2{font:800 22px/1.15 var(--display);margin:0;text-wrap:balance}
+.setup p{margin:0;color:var(--muted);max-width:60ch}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1.5px solid var(--ink);background:transparent;border-radius:99px;padding:9px 16px;font-weight:600;font-size:15px}
+.btn.primary{background:var(--f-yellow);border-color:var(--f-black);color:#16140f}
+.btn:disabled{opacity:.45;cursor:default}
+
+/* ---------- the chat bar and its resident ---------- */
+.dock{position:relative;flex:none}
+#stage{position:absolute;left:0;right:0;bottom:100%;height:0;pointer-events:none;z-index:2}
+#peg{position:absolute;left:0;bottom:-1px;width:48px;transform:translateX(var(--x,24px));transition:transform 0ms linear;
+  pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.peg-in{position:relative}
+.peg-svg{display:block;width:48px;height:80px;overflow:visible;
+  filter:drop-shadow(1px 0 0 var(--outline)) drop-shadow(-1px 0 0 var(--outline)) drop-shadow(0 1px 0 var(--outline)) drop-shadow(0 -1px 0 var(--outline))}
+.peg-svg .part{fill:url(#flag)}
+#pLegL{transform-origin:48px 126px}#pLegR{transform-origin:72px 126px}
+#pArmL{transform-origin:22px 71px}#pArmR{transform-origin:98px 71px}
+#pHead{transform-origin:60px 54px}#pUpper{transform-origin:60px 130px}#pBody{transform-origin:60px 194px}
+.ground{position:absolute;left:8px;right:8px;bottom:-3px;height:6px;border-radius:50%;background:var(--ink);opacity:.14}
+
+/* idle */
+#peg[data-s="idle"] #pUpper{animation:breathe 3.2s ease-in-out infinite}
+@keyframes breathe{50%{transform:translateY(-2px)}}
+/* walk */
+#peg[data-s="walk"] #pBody{animation:waddle .44s ease-in-out infinite alternate}
+#peg[data-s="walk"] #pLegL{animation:swingA .44s ease-in-out infinite alternate}
+#peg[data-s="walk"] #pLegR{animation:swingB .44s ease-in-out infinite alternate}
+#peg[data-s="walk"] #pArmL{animation:swingB .44s ease-in-out infinite alternate}
+#peg[data-s="walk"] #pArmR{animation:swingA .44s ease-in-out infinite alternate}
+@keyframes waddle{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+@keyframes swingA{from{transform:rotate(-13deg)}to{transform:rotate(13deg)}}
+@keyframes swingB{from{transform:rotate(13deg)}to{transform:rotate(-13deg)}}
+/* wave */
+#peg[data-s="wave"] #pArmR{animation:wave .32s ease-in-out infinite alternate}
+#peg[data-s="wave"] #pHead{transform:rotate(6deg)}
+@keyframes wave{from{transform:rotate(-125deg)}to{transform:rotate(-160deg)}}
+/* think: head rocks, foot taps, dots */
+#peg[data-s="think"] #pHead{animation:rock 1.5s ease-in-out infinite alternate}
+#peg[data-s="think"] #pLegR{animation:tap .38s ease-in-out infinite alternate}
+@keyframes rock{from{transform:rotate(-10deg)}to{transform:rotate(10deg)}}
+@keyframes tap{to{transform:rotate(-11deg)}}
+/* talk: bounce and gesture */
+#peg[data-s="talk"] #pBody{animation:hop .42s ease-in-out infinite alternate}
+#peg[data-s="talk"] #pArmL{animation:gestL .84s ease-in-out infinite}
+#peg[data-s="talk"] #pArmR{animation:gestR .84s ease-in-out infinite}
+@keyframes hop{to{transform:translateY(-6px)}}
+@keyframes gestL{0%,50%,100%{transform:none}25%{transform:rotate(32deg)}}
+@keyframes gestR{0%,50%,100%{transform:none}75%{transform:rotate(-32deg)}}
+/* load: carries the download bar overhead */
+#peg[data-s="load"] #pArmL{transform:rotate(166deg)}
+#peg[data-s="load"] #pArmR{transform:rotate(-166deg)}
+#peg[data-s="load"] #pBody{animation:strain .9s ease-in-out infinite alternate}
+#peg[data-s="load"] .lift{animation:strainPx .9s ease-in-out infinite alternate}
+@keyframes strain{to{transform:translateY(5px) scaleY(.975)}}
+@keyframes strainPx{to{transform:translate(-50%,2px)}}
+/* sit and sleep */
+#peg[data-s="sit"] #pBody,#peg[data-s="sleep"] #pBody{transform:translateY(43px)}
+#peg[data-s="sit"] #pLegL,#peg[data-s="sleep"] #pLegL{transform:scaleY(.36) rotate(8deg)}
+#peg[data-s="sit"] #pLegR,#peg[data-s="sleep"] #pLegR{transform:scaleY(.36) rotate(-8deg)}
+#peg[data-s="sit"] #pHead{animation:rock 2.6s ease-in-out infinite alternate}
+#peg[data-s="sleep"] #pHead{transform:rotate(17deg) translateY(3px)}
+#peg[data-s="sleep"] #pUpper{animation:snore 3.4s ease-in-out infinite}
+@keyframes snore{50%{transform:rotate(3deg) scaleY(.97)}}
+/* peek at what you type */
+#peg[data-s="peek"] #pUpper{transform:rotate(8deg);transition:transform .2s}
+#peg[data-s="peek"] #pHead{transform:rotate(13deg) translateY(4px);transition:transform .2s}
+/* shrug on error */
+#peg[data-s="shrug"] #pArmL{transform:rotate(34deg)}
+#peg[data-s="shrug"] #pArmR{transform:rotate(-34deg)}
+#peg[data-s="shrug"] #pUpper{animation:shrug .3s ease-in-out 4 alternate}
+#peg[data-s="shrug"] #pHead{transform:rotate(-9deg)}
+@keyframes shrug{to{transform:translateY(-5px)}}
+/* jump */
+#peg[data-s="jump"] .peg-in{animation:jump .55s cubic-bezier(.3,.7,.4,1)}
+#peg[data-s="jump"] #pArmL{transform:rotate(150deg)}
+#peg[data-s="jump"] #pArmR{transform:rotate(-150deg)}
+#peg[data-s="jump"] .ground{animation:shadow .55s}
+@keyframes jump{50%{transform:translateY(-30px)}}
+@keyframes shadow{50%{transform:scaleX(.5);opacity:.06}}
+
+.lift,.dots,.zz{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;display:none}
+.lift{bottom:86px;width:84px;height:16px;border:1.5px solid var(--outline);border-radius:5px;background:var(--bg);overflow:hidden}
+.lift b{position:absolute;inset:0 auto 0 0;width:var(--p,0%);background:var(--f-yellow);transition:width .3s}
+.lift span{position:absolute;inset:0;display:grid;place-items:center;font:600 10.5px/1 var(--body);color:#16140f;mix-blend-mode:normal;font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.lift span{color:var(--ink);text-shadow:0 0 3px var(--bg)}}
+#peg[data-s="load"] .lift{display:block}
+.dots{bottom:88px;gap:4px;padding:6px 8px;border-radius:12px;background:var(--surface-2)}
+#peg[data-s="think"] .dots{display:flex}
+.dots i{width:5px;height:5px;border-radius:50%;background:var(--ink);animation:dot 1s infinite}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,60%,100%{opacity:.25;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+.zz{bottom:52px;left:86%;font:800 14px/1 var(--display);color:var(--muted)}
+#peg[data-s="sleep"] .zz{display:block;animation:zz 2.6s ease-in-out infinite}
+@keyframes zz{from{opacity:0;transform:translate(-50%,6px) scale(.7)}40%{opacity:1}to{opacity:0;transform:translate(10%,-18px) scale(1.2)}}
+
+.composer{display:flex;align-items:flex-end;gap:8px;border:1.5px solid var(--outline);border-radius:22px;background:var(--bg);padding:6px 6px 6px 16px}
+.composer:focus-within{border-color:var(--ink)}
+#input{flex:1;min-width:0;border:0;outline:0;background:transparent;resize:none;padding:8px 0;max-height:140px;line-height:1.4}
+#input::placeholder{color:var(--muted)}
+#send{flex:none;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--f-black);background:var(--f-yellow);display:grid;place-items:center}
+#send svg{width:20px;height:20px;fill:none;stroke:#16140f;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#send[data-stop] {background:var(--f-red)}
+#send[data-stop] svg{stroke:none;fill:#fff}
+#send:disabled{opacity:.4;cursor:default}
+.credits{margin:0;padding:8px 0 10px;text-align:center;font-size:12px;color:var(--muted)}
+.credits a{color:inherit}
+
+dialog{border:0;padding:0;background:var(--bg);color:var(--ink);border-radius:20px;width:min(480px,calc(100% - 24px));max-height:calc(100dvh - 48px)}
+dialog::backdrop{background:rgba(10,10,8,.5)}
+.sheet{padding:20px;display:flex;flex-direction:column;gap:16px}
+.sheet h2{font:800 22px/1 var(--display);margin:0}
+.sheet h3{font:600 12px/1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface);padding:4px;border-radius:12px}
+.seg label{text-align:center;padding:8px;border-radius:9px;font-weight:500;font-size:14.5px;cursor:pointer}
+.seg input{position:absolute;opacity:0}
+.seg input:checked+label{background:var(--bg);box-shadow:0 0 0 1.5px var(--ink)}
+.seg input:focus-visible+label{outline:2px solid var(--f-red)}
+.field{display:flex;flex-direction:column;gap:5px;font-size:14px}
+.field>span{font-weight:500}
+.field input,.field select{border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 11px;width:100%;min-width:0}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.check{display:flex;gap:8px;align-items:center;font-size:14px}
+.group{display:flex;flex-direction:column;gap:10px}
+.sheet .credits-box{border-top:1.5px solid var(--line);padding-top:14px;font-size:14px}
+.credits-box p{margin:4px 0 0}
+
+/* ---------- Belgo's computer ---------- */
+.icon-btn+.icon-btn{margin-left:0}
+.icon-btn[aria-pressed="true"]{background:var(--f-yellow)}
+.icon-btn[aria-pressed="true"] svg{stroke:#16140f}
+#pc{flex:none;display:flex;flex-direction:column;gap:8px;padding-bottom:10px;border-bottom:1.5px solid var(--line)}
+.pc-screen{position:relative;border-radius:10px;overflow:hidden;background:#000;border:1.5px solid var(--outline)}
+#screen{position:relative;width:100%;aspect-ratio:4/3;max-height:40dvh;overflow:hidden;background:#000;outline-offset:-3px}
+#screen canvas{width:100%!important;height:100%!important;object-fit:contain;image-rendering:pixelated}
+#screen>div{position:absolute;left:0;top:0;color:#c8c8c8;white-space:pre;font:14px/15px var(--mono);transform-origin:0 0}
+#pcEmpty{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:18px;color:#d8d6cf;background:#000;font-size:14px}
+#pcEmpty strong{font:800 20px/1.1 var(--display);color:#fdda24}
+#pcEmpty span{max-width:46ch}
+.pc-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pc-bar .hint{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.btn.sm{padding:6px 12px;font-size:13.5px}
+.pad{display:flex;flex-wrap:wrap;gap:6px;user-select:none;-webkit-user-select:none}
+.pad button{flex:1 0 auto;min-width:44px;height:40px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);font:600 13px var(--body);touch-action:none}
+.pad button:active{background:var(--f-yellow);color:#16140f;border-color:#16140f}
+.msg.bot code.act{background:var(--f-yellow);color:#16140f;font-weight:600}
+/* typing on his computer */
+#peg[data-s="type"] #pHead{transform:translateY(4px)}
+#peg[data-s="type"] #pArmL{animation:tyL .2s ease-in-out infinite alternate}
+#peg[data-s="type"] #pArmR{animation:tyR .2s ease-in-out infinite alternate-reverse}
+@keyframes tyL{from{transform:rotate(-8deg)}to{transform:rotate(-22deg)}}
+@keyframes tyR{from{transform:rotate(8deg)}to{transform:rotate(22deg)}}
+
+@media (prefers-reduced-motion:reduce){#peg *,#peg{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Belgo</h1>
+    <span class="pill" id="status" data-k="idle"><i></i><span id="statusText">Asleep</span></span>
+    <button class="icon-btn" id="openPc" aria-label="Belgo's computer" aria-pressed="false">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></svg>
+    </button>
+    <button class="icon-btn" id="openSettings" aria-label="Settings">
+      <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+    </button>
+  </header>
+
+  <section id="pc" hidden aria-label="Belgo's computer">
+    <div class="pc-screen">
+      <div id="screen" tabindex="0" aria-label="Computer screen. Click it to type into the computer."><div></div><canvas></canvas></div>
+      <div id="pcEmpty"><strong>Belgo's computer has no disc</strong><span>Insert a bootable disc image (.iso). Belgo reads the screen while it shows text and presses the keys himself. You can play on it too.</span></div>
+    </div>
+    <div class="pc-bar">
+      <button class="btn sm primary" id="pcInsert" type="button">Insert disc</button>
+      <button class="btn sm" id="pcBuiltin" type="button" hidden>Start built-in disc</button>
+      <button class="btn sm" id="pcOff" type="button" hidden>Power off</button>
+      <span class="hint" id="pcName"></span>
+      <input type="file" id="pcFile" accept=".iso,.img,.ima,.bin" hidden>
+    </div>
+    <div class="pad" id="pad" hidden>
+      <button type="button" data-k="esc">Esc</button><button type="button" data-k="tab">Tab</button>
+      <button type="button" data-k="y">Y</button><button type="button" data-k="enter">Enter</button>
+      <button type="button" data-k="space">Use</button><button type="button" data-k="ctrl">Fire</button>
+      <button type="button" data-k="left" aria-label="Left">←</button><button type="button" data-k="up" aria-label="Up">↑</button>
+      <button type="button" data-k="down" aria-label="Down">↓</button><button type="button" data-k="right" aria-label="Right">→</button>
+    </div>
+  </section>
+
+  <main id="log" aria-live="polite">
+    <section class="setup" id="setup">
+      <h2>Hi, I'm Belgo. I live on your chat bar.</h2>
+      <p id="setupText">My brain runs on your own device with WebLLM, so nothing you write leaves it. The download happens once and is kept for next time.</p>
+      <div class="row">
+        <button class="btn primary" id="wake">Download my brain</button>
+        <button class="btn" id="useKey">Use an API key instead</button>
+      </div>
+      <p class="hint" id="setupHint"></p>
+    </section>
+  </main>
+
+  <div class="dock">
+    <div id="stage">
+      <div id="peg" data-s="idle" role="button" tabindex="0" aria-label="Belgo. Tap to say hello.">
+        <div class="lift"><b></b><span id="liftText">0%</span></div>
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="zz">z</div>
+        <div class="peg-in">
+          <svg class="peg-svg" viewBox="0 0 120 200" aria-hidden="true">
+            <defs>
+              <linearGradient id="flag" gradientUnits="userSpaceOnUse" x1="34" y1="0" x2="86" y2="0">
+                <stop offset="0" style="stop-color:var(--f-black)"/><stop offset=".335" style="stop-color:var(--f-black)"/>
+                <stop offset=".335" style="stop-color:var(--f-yellow)"/><stop offset=".665" style="stop-color:var(--f-yellow)"/>
+                <stop offset=".665" style="stop-color:var(--f-red)"/><stop offset="1" style="stop-color:var(--f-red)"/>
+              </linearGradient>
+            </defs>
+            <g id="pBody">
+              <rect class="part" id="pLegL" x="37" y="116" width="22" height="78" rx="10"/>
+              <rect class="part" id="pLegR" x="61" y="116" width="22" height="78" rx="10"/>
+              <g id="pUpper">
+                <rect class="part" id="pArmL" x="12.5" y="62" width="18.5" height="66" rx="9.25"/>
+                <rect class="part" id="pArmR" x="89" y="62" width="18.5" height="66" rx="9.25"/>
+                <path class="part" id="pTorso" d="M34 82a22 22 0 0 1 22-22h8a22 22 0 0 1 22 22v50H34z"/>
+                <circle class="part" id="pHead" cx="60" cy="30" r="24"/>
+              </g>
+            </g>
+          </svg>
+          <div class="ground"></div>
+        </div>
+      </div>
+    </div>
+    <form class="composer" id="form">
+      <textarea id="input" rows="1" placeholder="Wake Belgo up first" aria-label="Message"></textarea>
+      <button id="send" type="submit" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24" id="sendIcon"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+      </button>
+    </form>
+    <p class="credits">Inspired by Capri · Runs on <a href="https://webllm.mlc.ai" target="_blank" rel="noopener">WebLLM</a> and <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a></p>
+  </div>
+</div>
+
+<dialog id="settings" aria-labelledby="setTitle">
+  <form class="sheet" method="dialog" id="settingsForm">
+    <h2 id="setTitle">Belgo's brain</h2>
+    <div class="seg">
+      <input type="radio" name="mode" id="modeLocal" value="local"><label for="modeLocal">On this device</label>
+      <input type="radio" name="mode" id="modeApi" value="api"><label for="modeApi">API key</label>
+    </div>
+
+    <div class="group" id="localGroup">
+      <label class="field"><span>Model</span><select id="model"></select></label>
+      <p class="hint">Runs with WebLLM and WebGPU. Bigger models answer better and need more memory. Each one downloads once.</p>
+    </div>
+
+    <div class="group" id="apiGroup">
+      <label class="field"><span>API address</span><input id="apiBase" type="url" inputmode="url" placeholder="https://api.openai.com/v1" autocomplete="off"></label>
+      <label class="field"><span>Model name</span><input id="apiModel" type="text" placeholder="e.g. gpt-4o-mini" autocomplete="off" autocapitalize="off"></label>
+      <label class="field"><span>API key</span><input id="apiKey" type="password" placeholder="sk-…" autocomplete="off"></label>
+      <label class="check"><input type="checkbox" id="remember"> Remember the key in this browser</label>
+      <p class="hint">Works with any OpenAI-compatible service. Your key goes straight from this page to that address and nowhere else. Unless you tick the box, it is forgotten when you close the tab.</p>
+    </div>
+
+    <div class="row">
+      <button class="btn primary" value="save" id="saveSettings">Save</button>
+      <button class="btn" value="cancel" formnovalidate>Cancel</button>
+      <button class="btn" type="button" id="clearChat" style="margin-left:auto">Clear chat</button>
+    </div>
+
+    <div class="credits-box">
+      <h3>Credits</h3>
+      <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
+      <p>On-device answers run on <a href="https://webllm.mlc.ai" target="_blank" rel="noopener">WebLLM</a> by the MLC AI team.</p>
+      <p>His computer is <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a>, the x86 emulator by Fabian Hemmer and contributors.</p>
+    </div>
+  </form>
+</dialog>
+
+<script type="module">
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+/* ---------------- settings ---------------- */
+const LS = 'belgo.settings';
+const MODELS = [
+  { id: 'SmolLM2-360M-Instruct', label: 'SmolLM2 360M', note: 'about 0.4 GB, fastest' },
+  { id: 'Llama-3.2-1B-Instruct', label: 'Llama 3.2 1B', note: 'about 0.9 GB, balanced' },
+  { id: 'Qwen2.5-1.5B-Instruct', label: 'Qwen 2.5 1.5B', note: 'about 1.6 GB' },
+  { id: 'Phi-3.5-mini-instruct', label: 'Phi 3.5 mini', note: 'about 3.7 GB, needs a strong device' },
+];
+const cfg = { mode: 'local', model: 'Llama-3.2-1B-Instruct', base: 'https://api.openai.com/v1', apiModel: '', key: '', remember: false };
+try { Object.assign(cfg, JSON.parse(localStorage.getItem(LS) || '{}')); } catch {}
+function saveCfg() {
+  try {
+    const out = { ...cfg };
+    if (!cfg.remember) out.key = '';
+    localStorage.setItem(LS, JSON.stringify(out));
+  } catch {}
+}
+const modelInfo = () => MODELS.find(m => m.id === cfg.model) || MODELS[1];
+
+/* ---------------- the figure ---------------- */
+const Peg = (() => {
+  const el = $('#peg'), stage = $('#stage');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let base = 'idle', temp = null, tTimer = 0, idleTimer = 0, x = 24, lastAct = Date.now();
+  const apply = () => { el.dataset.s = temp || base; };
+  const maxX = () => Math.max(8, stage.clientWidth - el.offsetWidth - 8);
+  function place(nx, ms) {
+    x = clamp(nx, 8, maxX());
+    el.style.transitionDuration = ms + 'ms';
+    el.style.setProperty('--x', x + 'px');
+  }
+  function freeze() {
+    const m = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+    place(m.m41, 0);
+  }
+  function clearTemp() { clearTimeout(tTimer); if (temp === 'walk') freeze(); temp = null; }
+  function flash(s, ms) {
+    if (base !== 'idle') return;
+    clearTemp(); temp = s; apply();
+    tTimer = setTimeout(() => { temp = null; apply(); }, ms);
+  }
+  function walkTo(nx) {
+    if (reduce || base !== 'idle') return;
+    clearTemp();
+    nx = clamp(nx, 8, maxX());
+    const ms = Math.max(300, Math.abs(nx - x) * 26);
+    place(nx, ms); temp = 'walk'; apply();
+    tTimer = setTimeout(() => { temp = null; apply(); }, ms);
+  }
+  function schedule() { clearTimeout(idleTimer); idleTimer = setTimeout(tick, 3500 + Math.random() * 5000); }
+  function tick() {
+    if (base === 'idle' && !temp) {
+      if (Date.now() - lastAct > 75000) { temp = 'sleep'; apply(); return; }
+      const r = Math.random();
+      if (r < .5) walkTo(8 + Math.random() * (maxX() - 8));
+      else if (r < .66) flash('wave', 1700);
+      else if (r < .88) flash('sit', 6500);
+      else flash('peek', 1500);
+    }
+    schedule();
+  }
+  function poke() {
+    lastAct = Date.now();
+    if (temp === 'sleep') { temp = null; apply(); schedule(); }
+  }
+  function setBase(s) { clearTemp(); base = s; apply(); lastAct = Date.now(); schedule(); }
+  function hello() { poke(); flash('jump', 560); setTimeout(() => flash('wave', 1500), 580); }
+  el.addEventListener('click', hello);
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hello(); } });
+  addEventListener('resize', () => { if (temp !== 'walk') place(x, 0); });
+  place(24, 0); schedule();
+  return { setBase, flash, poke, hello, progress(p) { el.style.setProperty('--p', Math.round(p * 100) + '%'); $('#liftText').textContent = Math.round(p * 100) + '%'; } };
+})();
+
+/* ---------------- chat state and rendering ---------------- */
+const SYSTEM = 'You are Belgo, a small cheerful figure painted in the black, yellow and red of the Belgian flag. You live on top of the chat bar. Be friendly, clear and concise. Reply in the language the user writes in.';
+const log = $('#log'), input = $('#input'), sendBtn = $('#send');
+let history = [], busy = false, loading = false, engine = null, engineId = '', aborter = null, stopLocal = false, stopped = false;
+
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function inline(s) {
+  return esc(s).replace(/\[\[([^\]\n]+)\]\]/g, '<code class="act">$1</code>').replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+}
+function md(src) {
+  return src.split(/```/).map((part, i) => {
+    if (i % 2) return '<pre><code>' + esc(part.replace(/^[\w+-]*\n/, '')) + '</code></pre>';
+    return part.split(/\n{2,}/).filter(p => p.trim()).map(p => '<p>' + inline(p.trim()).replace(/\n/g, '<br>') + '</p>').join('');
+  }).join('');
+}
+const nearBottom = () => log.scrollHeight - log.scrollTop - log.clientHeight < 140;
+function add(cls, text) {
+  const d = document.createElement('div');
+  d.className = cls; d.textContent = text;
+  log.append(d); log.scrollTop = log.scrollHeight;
+  return d;
+}
+const note = (t, err) => add('note' + (err ? ' err' : ''), t);
+
+function isReady() { return cfg.mode === 'api' ? !!(cfg.base && cfg.apiModel) : !!engine; }
+function setStatus(kind, text) { $('#status').dataset.k = kind; $('#statusText').textContent = text; }
+function refresh() {
+  const ready = isReady();
+  $('#setup').hidden = ready || loading || history.length > 0;
+  if (!loading && !busy) {
+    if (ready) setStatus('ready', cfg.mode === 'api' ? 'API · ' + cfg.apiModel : 'On device · ' + modelInfo().label);
+    else setStatus('idle', 'Asleep');
+  }
+  input.placeholder = ready ? 'Message Belgo' : (loading ? 'Belgo is loading…' : 'Wake Belgo up first');
+  sendBtn.disabled = !busy && (!ready || !input.value.trim());
+  if (busy) { sendBtn.dataset.stop = ''; sendBtn.setAttribute('aria-label', 'Stop'); $('#sendIcon').innerHTML = '<rect x="7" y="7" width="10" height="10" rx="2"/>'; }
+  else { delete sendBtn.dataset.stop; sendBtn.setAttribute('aria-label', 'Send'); $('#sendIcon').innerHTML = '<path d="M12 19V5M6 11l6-6 6 6"/>'; }
+  $('#wake').textContent = 'Download my brain (' + modelInfo().note.split(',')[0] + ')';
+  $('#setupHint').textContent = navigator.gpu ? '' : 'This browser has no WebGPU, so the on-device brain cannot run here. Try a recent Chrome, Edge or Safari, or use an API key.';
+  $('#wake').disabled = !navigator.gpu;
+}
+
+/* ---------------- Belgo's computer (v86) ---------------- */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const PC = (() => {
+  const CDN = 'https://cdn.jsdelivr.net/npm/v86/';
+  const screen = $('#screen');
+  let emu = null, gfx = false, fitT = 0;
+  const SC = { esc: [1], enter: [0x1c], space: [0x39], tab: [0x0f], backspace: [0x0e], ctrl: [0x1d], alt: [0x38], shift: [0x2a],
+    up: [0xe0, 0x48], down: [0xe0, 0x50], left: [0xe0, 0x4b], right: [0xe0, 0x4d] };
+  [['1234567890', 2], ['qwertyuiop', 0x10], ['asdfghjkl', 0x1e], ['zxcvbnm', 0x2c]].forEach(([row, b]) => [...row].forEach((c, i) => { SC[c] = [b + i]; }));
+  for (let i = 1; i <= 10; i++) SC['f' + i] = [0x3a + i];
+  const ALIAS = { return: 'enter', escape: 'esc', control: 'ctrl', fire: 'ctrl', use: 'space' };
+  const code = k => { k = String(k).trim().toLowerCase(); return SC[ALIAS[k] || k]; };
+  const down = k => { const c = code(k); if (emu && c) emu.keyboard_send_scancodes(c); };
+  const up = k => { const c = code(k); if (emu && c) emu.keyboard_send_scancodes(c.map((v, i) => i === c.length - 1 ? v | 0x80 : v)); };
+  async function tap(k, ms = 90) { down(k); await sleep(ms); up(k); }
+  async function type(text) {
+    const parts = text.replace(/\\n/g, '\n').split('\n');
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i]) { emu.keyboard_send_text(parts[i]); await sleep(120 + parts[i].length * 12); }
+      if (i < parts.length - 1) await tap('enter');
+    }
+  }
+  function isGfx() { try { const v = emu.v86.cpu.devices.vga.graphical_mode; if (typeof v === 'boolean') return v; } catch {} return gfx; }
+  function text() {
+    let rows = [];
+    try { rows = emu.screen_adapter.get_text_screen(); } catch {}
+    if (!rows || !rows.length) { const d = screen.firstElementChild; rows = d ? [...d.children].map(c => c.textContent) : []; }
+    return rows.map(r => String(r).replace(/\s+$/, '')).join('\n').replace(/^\n+|\n+$/g, '').slice(-1800);
+  }
+  function report() {
+    if (!emu) return 'The computer is switched off.';
+    if (isGfx()) return 'Computer screen: graphics mode (a game or picture is showing). You cannot see it, but your keys still work.';
+    return 'Computer screen now:\n' + (text() || '(blank)');
+  }
+  function prompt() {
+    if (!emu) return '';
+    return '\n\nYou have your own computer, an emulated PC that booted from the disc the user gave you. Control it by writing commands in double square brackets:\n' +
+      '[[type: dir]] types text. [[key: enter]] presses a key (enter, esc, space, tab, backspace, up, down, left, right, ctrl, alt, y, n, f1 to f10, letters, digits). ' +
+      '[[hold: up 1000]] holds a key for that many milliseconds. [[wait: 3]] waits seconds.\n' +
+      'To run a DOS command, type it and then press enter. Use only a few commands per reply. After your commands you will be shown the screen again. When you are finished, answer the user without any commands.\n\n' + report();
+  }
+  function parse(out) {
+    const acts = [], re = /\[\[\s*(type|key|hold|wait)\s*:\s*([^\]]*)\]\]/gi;
+    let m; while ((m = re.exec(out)) && acts.length < 8) acts.push([m[1].toLowerCase(), m[2]]);
+    return acts;
+  }
+  async function run(acts, cancelled) {
+    for (const [kind, arg] of acts) {
+      if (!emu || cancelled()) return;
+      if (kind === 'type') await type(arg.replace(/^ /, ''));
+      else if (kind === 'key') await tap(arg);
+      else if (kind === 'hold') { const [k, ms] = arg.trim().split(/\s+/); await tap(k, clamp(+ms || 500, 50, 3000)); }
+      else if (kind === 'wait') await sleep(clamp((+arg || 1) * 1000, 100, 10000));
+      await sleep(250);
+    }
+    await sleep(1300);
+  }
+  async function loadV86() {
+    for (const url of [CDN + 'build/libv86.mjs', 'https://esm.run/v86']) {
+      try { const m = await import(url); const V = m.V86 || m.V86Starter || m.default; if (V) return V; } catch {}
+    }
+    await new Promise((ok, no) => { const s = document.createElement('script'); s.src = CDN + 'build/libv86.js'; s.onload = ok; s.onerror = () => no(new Error('The emulator files could not be downloaded.')); document.head.append(s); });
+    const V = window.V86 || window.V86Starter;
+    if (!V) throw new Error('The emulator loaded but did not start.');
+    return V;
+  }
+  function fit() {
+    const d = screen.firstElementChild;
+    if (d && d.offsetWidth) d.style.transform = 'scale(' + Math.min(screen.clientWidth / d.offsetWidth, screen.clientHeight / d.offsetHeight) + ')';
+  }
+  function setKb(on) { try { (emu.keyboard_set_enabled || emu.keyboard_set_status).call(emu, on); } catch {} }
+  async function off() {
+    clearInterval(fitT);
+    if (emu) { try { await emu.destroy(); } catch {} }
+    emu = null; gfx = false;
+    $('#pcEmpty').hidden = false; $('#pcOff').hidden = true; $('#pad').hidden = true; $('#pcName').textContent = '';
+  }
+  async function boot(file) {
+    await off();
+    $('#pcName').textContent = 'Starting ' + file.name + '…';
+    try {
+      const V86 = await loadV86();
+      const opt = { wasm_path: CDN + 'build/v86.wasm', memory_size: 64 << 20, vga_memory_size: 8 << 20, screen_container: screen,
+        bios: { url: CDN + 'bios/seabios.bin' }, vga_bios: { url: CDN + 'bios/vgabios.bin' }, autostart: true, disable_mouse: true };
+      const src = file instanceof File ? { buffer: file } : { url: file.url };
+      if (/\.iso$/i.test(file.name)) opt.cdrom = src;
+      else if (file.size && file.size <= 2949120) opt.fda = src;
+      else opt.hda = src;
+      emu = new V86(opt);
+      try { emu.add_listener('screen-set-mode', g => { gfx = !!g; }); } catch {}
+      setKb(document.activeElement === screen);
+      fitT = setInterval(fit, 700);
+      $('#pcEmpty').hidden = true; $('#pcOff').hidden = false; $('#pad').hidden = false;
+      $('#pcName').textContent = file.name;
+      note('Belgo has a computer now, booted from ' + file.name + '. Ask him to use it, or click the screen to play yourself.');
+      Peg.hello();
+    } catch (e) {
+      await off();
+      note('The computer did not start: ' + (e?.message || e), true);
+      Peg.flash('shrug', 1400);
+    }
+  }
+  screen.addEventListener('focus', () => setKb(true));
+  screen.addEventListener('blur', () => setKb(false));
+  screen.addEventListener('pointerdown', () => screen.focus());
+  $('#pad').querySelectorAll('button').forEach(b => {
+    const k = b.dataset.k;
+    b.addEventListener('pointerdown', e => { e.preventDefault(); down(k); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => up(k)));
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  });
+  $('#pcInsert').addEventListener('click', () => $('#pcFile').click());
+  $('#pcFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) boot(f); });
+  $('#pcOff').addEventListener('click', off);
+  /* A disc published next to this page (disc.iso or disc.img) becomes the built-in disc. */
+  let builtin = null;
+  (async () => {
+    if (!/^https?:$/.test(location.protocol)) return;
+    for (const name of ['disc.iso', 'disc.img']) {
+      try {
+        const r = await fetch(name, { method: 'HEAD' });
+        if (!r.ok || /text\/html/i.test(r.headers.get('content-type') || '')) continue;
+        builtin = { url: new URL(name, location.href).href, name, size: +r.headers.get('content-length') || 0 };
+        $('#pcBuiltin').hidden = false;
+        $('#pcEmpty').querySelector('span').textContent = 'A disc is ready. Press Start built-in disc and Belgo boots it, reads the screen while it shows text and presses the keys himself. You can play on it too.';
+        return;
+      } catch {}
+    }
+  })();
+  $('#pcBuiltin').addEventListener('click', () => { if (builtin) boot(builtin); });
+  $('#openPc').addEventListener('click', () => {
+    const show = $('#pc').hidden; $('#pc').hidden = !show;
+    $('#openPc').setAttribute('aria-pressed', String(show));
+    if (show) fit();
+  });
+  return { on: () => !!emu, prompt, report, parse, run };
+})();
+
+/* ---------------- on-device brain (WebLLM) ---------------- */
+async function loadLocal() {
+  if (loading) return;
+  if (!navigator.gpu) { note('This browser has no WebGPU. Use an API key, or open Belgo in a recent Chrome, Edge or Safari.', true); Peg.flash('shrug', 1400); return; }
+  loading = true; Peg.progress(0); Peg.setBase('load'); setStatus('busy', 'Loading 0%'); refresh();
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) throw new Error('No graphics adapter is available for WebGPU on this device.');
+    const webllm = await import('https://esm.run/@mlc-ai/web-llm');
+    const list = webllm.prebuiltAppConfig.model_list.map(m => m.model_id);
+    const want = cfg.model + (adapter.features.has('shader-f16') ? '-q4f16_1-MLC' : '-q4f32_1-MLC');
+    const id = list.includes(want) ? want : list.find(m => m.startsWith(cfg.model));
+    if (!id) throw new Error('WebLLM no longer lists ' + modelInfo().label + '. Pick another model in settings.');
+    if (engine) { try { await engine.unload(); } catch {} engine = null; }
+    engine = await webllm.CreateMLCEngine(id, {
+      initProgressCallback: r => { const p = r.progress || 0; Peg.progress(p); setStatus('busy', 'Loading ' + Math.round(p * 100) + '%'); }
+    });
+    engineId = cfg.model;
+    loading = false; Peg.setBase('idle'); refresh();
+    note('Belgo is awake. Everything you write stays on this device.');
+    Peg.hello(); input.focus();
+  } catch (e) {
+    loading = false; engine = null; Peg.setBase('idle'); refresh();
+    setStatus('err', 'Could not load');
+    note('The brain did not load: ' + (e?.message || e) + ' Check your connection and free memory, or pick a smaller model in settings.', true);
+    Peg.flash('shrug', 1400);
+  }
+}
+
+/* ---------------- answering ---------------- */
+async function* localStream(messages) {
+  stopLocal = false;
+  const stream = await engine.chat.completions.create({ messages, stream: true, temperature: 0.7 });
+  for await (const ch of stream) {
+    if (stopLocal) break;
+    const t = ch.choices?.[0]?.delta?.content;
+    if (t) yield t;
+  }
+}
+async function* apiStream(messages) {
+  aborter = new AbortController();
+  const headers = { 'Content-Type': 'application/json' };
+  if (cfg.key) headers.Authorization = 'Bearer ' + cfg.key;
+  const res = await fetch(cfg.base.replace(/\/+$/, '') + '/chat/completions', {
+    method: 'POST', headers, signal: aborter.signal,
+    body: JSON.stringify({ model: cfg.apiModel, messages, stream: true })
+  });
+  if (!res.ok) {
+    let detail = ''; try { const j = await res.json(); detail = j.error?.message || ''; } catch {}
+    throw new Error('The service answered ' + res.status + (detail ? ': ' + detail : '') + '.');
+  }
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      const s = line.trim();
+      if (!s.startsWith('data:')) continue;
+      const data = s.slice(5).trim();
+      if (data === '[DONE]') return;
+      try { const t = JSON.parse(data).choices?.[0]?.delta?.content; if (t) yield t; } catch {}
+    }
+  }
+}
+
+async function streamOne(messages) {
+  let out = '', bubble = null;
+  const gen = cfg.mode === 'api' ? apiStream(messages) : localStream(messages);
+  for await (const t of gen) {
+    if (!bubble) { bubble = add('msg bot', ''); Peg.setBase('talk'); setStatus('busy', 'Answering'); }
+    out += t;
+    const stick = nearBottom();
+    bubble.innerHTML = md(out);
+    if (stick) log.scrollTop = log.scrollHeight;
+  }
+  return out;
+}
+async function send() {
+  const text = input.value.trim();
+  if (!text || busy || !isReady()) return;
+  input.value = ''; grow();
+  history.push({ role: 'user', content: text });
+  add('msg user', text);
+  busy = true; stopped = false; refresh();
+  const turn = []; let out = '', steps = 0;
+  try {
+    for (;;) {
+      setStatus('busy', 'Thinking'); Peg.setBase('think');
+      const messages = [{ role: 'system', content: SYSTEM + PC.prompt() }, ...history.slice(-10), ...turn.slice(-4)];
+      out = await streamOne(messages);
+      const acts = PC.on() ? PC.parse(out) : [];
+      if (!out || !acts.length || stopped || steps >= 6) break;
+      turn.push({ role: 'assistant', content: out });
+      setStatus('busy', 'Using his computer'); Peg.setBase('type');
+      await PC.run(acts, () => stopped);
+      turn.push({ role: 'user', content: PC.report() });
+      steps++;
+    }
+    if (out) history.push({ role: 'assistant', content: out });
+    else if (!stopped && !turn.length) note('Belgo had nothing to say. Try asking again.');
+  } catch (e) {
+    if (e?.name !== 'AbortError') {
+      const hint = cfg.mode === 'api' ? ' Check the address, model name and key in settings.' : '';
+      note('That did not work: ' + (e?.message || e) + hint, true);
+      setTimeout(() => Peg.flash('shrug', 1400), 0);
+    }
+  }
+  busy = false; aborter = null; Peg.setBase('idle'); refresh();
+}
+function stop() {
+  stopped = true;
+  if (cfg.mode === 'api') aborter?.abort();
+  else { stopLocal = true; try { engine?.interruptGenerate(); } catch {} }
+}
+
+/* ---------------- composer ---------------- */
+function grow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px'; }
+let peekT = 0;
+input.addEventListener('input', () => {
+  grow(); refresh(); Peg.poke();
+  clearTimeout(peekT); peekT = setTimeout(() => Peg.flash('peek', 1100), 60);
+});
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !matchMedia('(pointer:coarse)').matches) { e.preventDefault(); send(); }
+});
+$('#form').addEventListener('submit', e => { e.preventDefault(); busy ? stop() : send(); });
+$('#wake').addEventListener('click', loadLocal);
+
+/* ---------------- settings sheet ---------------- */
+const dlg = $('#settings');
+$('#model').innerHTML = MODELS.map(m => `<option value="${m.id}">${m.label} (${m.note})</option>`).join('');
+function showGroups() {
+  const api = $('#modeApi').checked;
+  $('#apiGroup').hidden = !api; $('#localGroup').hidden = api;
+}
+function openSettings(mode) {
+  $('#modeLocal').checked = (mode || cfg.mode) === 'local';
+  $('#modeApi').checked = (mode || cfg.mode) === 'api';
+  $('#model').value = cfg.model; $('#apiBase').value = cfg.base; $('#apiModel').value = cfg.apiModel;
+  $('#apiKey').value = cfg.key; $('#remember').checked = cfg.remember;
+  showGroups(); dlg.showModal();
+}
+$('#modeLocal').addEventListener('change', showGroups);
+$('#modeApi').addEventListener('change', showGroups);
+$('#openSettings').addEventListener('click', () => openSettings());
+$('#useKey').addEventListener('click', () => openSettings('api'));
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close('cancel'); });
+dlg.addEventListener('close', () => {
+  if (dlg.returnValue !== 'save') return;
+  const before = cfg.mode + cfg.model;
+  cfg.mode = $('#modeApi').checked ? 'api' : 'local';
+  cfg.model = $('#model').value;
+  cfg.base = $('#apiBase').value.trim() || 'https://api.openai.com/v1';
+  cfg.apiModel = $('#apiModel').value.trim();
+  cfg.key = $('#apiKey').value.trim();
+  cfg.remember = $('#remember').checked;
+  saveCfg();
+  if (cfg.mode === 'local' && engine && engineId !== cfg.model) { try { engine.unload(); } catch {} engine = null; }
+  refresh();
+  if (cfg.mode === 'api') {
+    if (!cfg.apiModel) note('Add a model name in settings so Belgo knows which one to ask.', true);
+    else if (before !== cfg.mode + cfg.model) { note('Belgo now answers through ' + cfg.apiModel + '. Your messages are sent to ' + new URL(cfg.base).host + '.'); Peg.hello(); }
+  } else if (!engine && history.length) note('Belgo needs to download ' + modelInfo().label + ' before answering.'), $('#setup').hidden = false;
+});
+$('#clearChat').addEventListener('click', () => {
+  history = [];
+  log.querySelectorAll('.msg,.note').forEach(n => n.remove());
+  dlg.close('cancel'); refresh();
+});
+
+refresh();
+</script>
+</body>
+</html>

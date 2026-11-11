@@ -177,7 +177,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .sheet{padding:20px;display:flex;flex-direction:column;gap:16px}
 .sheet h2{font:800 22px/1 var(--display);margin:0}
 .sheet h3{font:600 12px/1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0}
-.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);padding:4px;border-radius:12px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface);padding:4px;border-radius:12px}
 .seg label{text-align:center;padding:8px 4px;border-radius:9px;font-weight:500;font-size:14.5px;cursor:pointer}
 .seg input{position:absolute;opacity:0}
 .seg input:checked+label{background:var(--bg);box-shadow:0 0 0 1.5px var(--ink)}
@@ -191,25 +191,6 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .sheet .credits-box{border-top:1.5px solid var(--line);padding-top:14px;font-size:14px}
 .credits-box p{margin:4px 0 0}
 
-/* ---------- Belgo's computer ---------- */
-.icon-btn+.icon-btn{margin-left:0}
-.icon-btn[aria-pressed="true"]{background:var(--f-yellow)}
-.icon-btn[aria-pressed="true"] svg{stroke:#16140f}
-#pc{flex:none;display:flex;flex-direction:column;gap:8px;padding-bottom:10px;border-bottom:1.5px solid var(--line)}
-.pc-screen{position:relative;border-radius:10px;overflow:hidden;background:#000;border:1.5px solid var(--outline)}
-#screen{position:relative;width:100%;aspect-ratio:4/3;max-height:40dvh;overflow:hidden;background:#000;outline-offset:-3px}
-#screen canvas{width:100%!important;height:100%!important;object-fit:contain;image-rendering:pixelated}
-#screen>div{position:absolute;left:0;top:0;color:#c8c8c8;white-space:pre;font:14px/15px var(--mono);transform-origin:0 0}
-#pcEmpty{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:18px;color:#d8d6cf;background:#000;font-size:14px}
-#pcEmpty strong{font:800 20px/1.1 var(--display);color:#fdda24}
-#pcEmpty span{max-width:46ch}
-.pc-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.pc-bar .hint{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.btn.sm{padding:6px 12px;font-size:13.5px}
-.pad{display:flex;flex-wrap:wrap;gap:6px;user-select:none;-webkit-user-select:none}
-.pad button{flex:1 0 auto;min-width:44px;height:40px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);font:600 13px var(--body);touch-action:none}
-.pad button:active{background:var(--f-yellow);color:#16140f;border-color:#16140f}
-.msg.bot code.act{background:var(--f-yellow);color:#16140f;font-weight:600}
 #picBtn{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center}
 #picBtn:hover{background:var(--surface)}
 #picBtn svg{width:21px;height:21px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -217,13 +198,6 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .msg.pic{padding:6px;display:flex;flex-direction:column;gap:6px}
 .msg.pic img{display:block;width:100%;max-width:384px;border-radius:13px}
 .msg.pic a,.msg.pic span{font-size:12.5px;color:var(--muted);padding:0 6px 2px}
-/* typing on his computer */
-#peg[data-s="type"] #pHead{transform:translateY(4px)}
-#peg[data-s="type"] #pArmL{animation:tyL .2s ease-in-out infinite alternate}
-#peg[data-s="type"] #pArmR{animation:tyR .2s ease-in-out infinite alternate-reverse}
-@keyframes tyL{from{transform:rotate(-8deg)}to{transform:rotate(-22deg)}}
-@keyframes tyR{from{transform:rotate(8deg)}to{transform:rotate(22deg)}}
-
 @media (prefers-reduced-motion:reduce){#peg *,#peg{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -232,41 +206,18 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
   <header>
     <h1>Belgo</h1>
     <span class="pill" id="status" data-k="idle"><i></i><span id="statusText">Asleep</span></span>
-    <button class="icon-btn" id="openPc" aria-label="Belgo's computer" aria-pressed="false">
-      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></svg>
-    </button>
     <button class="icon-btn" id="openSettings" aria-label="Settings">
       <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
     </button>
   </header>
 
-  <section id="pc" hidden aria-label="Belgo's computer">
-    <div class="pc-screen">
-      <div id="screen" tabindex="0" aria-label="Computer screen. Click it to type into the computer."><div></div><canvas></canvas></div>
-      <div id="pcEmpty"><strong>Belgo's computer has no disc</strong><span>Insert a bootable disc image (.iso). Belgo reads the screen while it shows text and presses the keys himself. You can play on it too.</span></div>
-    </div>
-    <div class="pc-bar">
-      <button class="btn sm primary" id="pcInsert" type="button">Insert disc</button>
-      <button class="btn sm" id="pcBuiltin" type="button" hidden>Start built-in disc</button>
-      <button class="btn sm" id="pcOff" type="button" hidden>Power off</button>
-      <span class="hint" id="pcName"></span>
-      <input type="file" id="pcFile" accept=".iso,.img,.ima,.bin" hidden>
-    </div>
-    <div class="pad" id="pad" hidden>
-      <button type="button" data-k="esc">Esc</button><button type="button" data-k="tab">Tab</button>
-      <button type="button" data-k="y">Y</button><button type="button" data-k="enter">Enter</button>
-      <button type="button" data-k="space">Use</button><button type="button" data-k="ctrl">Fire</button>
-      <button type="button" data-k="left" aria-label="Left">←</button><button type="button" data-k="up" aria-label="Up">↑</button>
-      <button type="button" data-k="down" aria-label="Down">↓</button><button type="button" data-k="right" aria-label="Right">→</button>
-    </div>
-  </section>
-
   <main id="log" aria-live="polite">
     <section class="setup" id="setup">
       <h2>Hi, I'm Belgo. I live on your chat bar.</h2>
-      <p id="setupText">My brain runs on your own device, so nothing you write leaves it. The download happens once and is kept for next time.</p>
+      <p id="setupText">I need a brain first. GitHub Models answers fast with a free GitHub token. The on-device brain needs no account but has to download and start on this device.</p>
       <div class="row">
-        <button class="btn primary" id="wake">Download my brain</button>
+        <button class="btn primary" id="useGh">Connect GitHub Models</button>
+        <button class="btn" id="wake">Download my brain</button>
       </div>
       <p class="hint" id="setupHint"></p>
     </section>
@@ -311,13 +262,26 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
         <svg viewBox="0 0 24 24" id="sendIcon"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
       </button>
     </form>
-    <p class="credits">Inspired by Capri · Runs on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> and <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a></p>
+    <p class="credits">Inspired by Capri · Runs on <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a> or <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a></p>
   </div>
 </div>
 
 <dialog id="settings" aria-labelledby="setTitle">
   <form class="sheet" method="dialog" id="settingsForm">
     <h2 id="setTitle">Belgo's brain</h2>
+    <div class="seg">
+      <input type="radio" name="mode" id="modeGh" value="github"><label for="modeGh">GitHub Models</label>
+      <input type="radio" name="mode" id="modeLocal" value="local"><label for="modeLocal">On device</label>
+    </div>
+
+    <div class="group" id="ghGroup">
+      <label class="field"><span>GitHub token</span><input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off"></label>
+      <label class="field"><span>Model</span><input id="ghModel" type="text" list="ghModels" autocomplete="off" autocapitalize="off">
+        <datalist id="ghModels"><option value="openai/gpt-4.1-mini"></option><option value="openai/gpt-4.1"></option><option value="meta/llama-4-scout-17b-16e-instruct"></option><option value="mistral-ai/mistral-medium-2505"></option></datalist></label>
+      <label class="check"><input type="checkbox" id="ghRemember"> Remember the token in this browser</label>
+      <p class="hint">To get a token: on GitHub open Settings, Developer settings, Personal access tokens, Fine-grained tokens, and generate one with the account permission Models set to Read-only. It is free, with a daily limit (about 150 answers on the small models). The token goes only from this page to GitHub. Your messages are sent to GitHub Models.</p>
+    </div>
+
     <div class="group" id="localGroup">
       <label class="field"><span>Model</span><select id="model"></select></label>
       <p class="hint">Runs on your device's processor with wllama, so it works in any modern browser. Bigger models answer better but are slower and need more memory. Each one downloads once. If a model fails to load, Belgo tries the next smaller one by himself.</p>
@@ -332,9 +296,9 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     <div class="credits-box">
       <h3>Credits</h3>
       <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
+      <p>Online answers come from <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>.</p>
       <p>On-device answers run on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> by Xuan Son Nguyen, built on llama.cpp.</p>
-      <p>His computer is <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a>, the x86 emulator by Fabian Hemmer and contributors.</p>
-      <p>Pictures are painted by <a href="https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo" target="_blank" rel="noopener">Z-Image-Turbo</a> (Tongyi-MAI) and <a href="https://huggingface.co/spaces/black-forest-labs/FLUX.2-klein-4B" target="_blank" rel="noopener">FLUX.2 klein</a> (Black Forest Labs) on their public Hugging Face Spaces, with <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a> as a backup.</p>
+      <p>Pictures are painted by <a href="https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo" target="_blank" rel="noopener">Z-Image-Turbo</a> (Tongyi-MAI) and <a href="https://huggingface.co/spaces/black-forest-labs/FLUX.2-klein-4B" target="_blank" rel="noopener">FLUX.2 klein</a> (Black Forest Labs) on their public Hugging Face Spaces.</p>
     </div>
   </form>
 </dialog>
@@ -352,9 +316,17 @@ const MODELS = [
   { id: 'qwen15', label: 'Qwen 2.5 1.5B', note: '1.1 GB, smartest, slow on phones', repo: 'Qwen/Qwen2.5-1.5B-Instruct-GGUF', file: 'qwen2.5-1.5b-instruct-q4_k_m.gguf' },
 ];
 const onPhone = matchMedia('(pointer:coarse)').matches;
-const cfg = { model: onPhone ? 'qwen05' : 'llama1' };
-try { const saved = JSON.parse(localStorage.getItem(LS) || '{}'); if (MODELS.some(m => m.id === saved.model)) cfg.model = saved.model; } catch {}
-function saveCfg() { try { localStorage.setItem(LS, JSON.stringify({ model: cfg.model })); } catch {} }
+const cfg = { mode: 'github', ghModel: 'openai/gpt-4.1-mini', token: '', remember: false, model: onPhone ? 'qwen05' : 'llama1' };
+try {
+  const saved = JSON.parse(localStorage.getItem(LS) || '{}');
+  if (MODELS.some(m => m.id === saved.model)) cfg.model = saved.model;
+  if (saved.mode === 'local' || saved.mode === 'github') cfg.mode = saved.mode;
+  if (saved.ghModel) cfg.ghModel = saved.ghModel;
+  if (saved.remember && saved.token) { cfg.token = saved.token; cfg.remember = true; }
+} catch {}
+function saveCfg() {
+  try { localStorage.setItem(LS, JSON.stringify({ mode: cfg.mode, model: cfg.model, ghModel: cfg.ghModel, remember: cfg.remember, token: cfg.remember ? cfg.token : '' })); } catch {}
+}
 const modelInfo = () => MODELS.find(m => m.id === cfg.model) || MODELS[1];
 
 /* ---------------- the figure ---------------- */
@@ -436,13 +408,14 @@ function add(cls, text) {
 }
 const note = (t, err) => add('note' + (err ? ' err' : ''), t);
 
-function isReady() { return !!engine; }
+const onGh = () => cfg.mode === 'github';
+function isReady() { return onGh() ? !!cfg.token : !!engine; }
 function setStatus(kind, text) { $('#status').dataset.k = kind; $('#statusText').textContent = text; }
 function refresh() {
   const ready = isReady();
   $('#setup').hidden = ready || loading || history.length > 0;
   if (!loading && !busy) {
-    if (ready) setStatus('ready', 'On device · ' + ((MODELS.find(m => m.id === engineId) || modelInfo()).label));
+    if (ready) setStatus('ready', onGh() ? 'GitHub · ' + cfg.ghModel.split('/').pop() : 'On device · ' + ((MODELS.find(m => m.id === engineId) || modelInfo()).label));
     else setStatus('idle', 'Asleep');
   }
   input.placeholder = ready ? 'Message Belgo' : (loading ? 'Belgo is loading…' : 'Wake Belgo up first');
@@ -451,146 +424,10 @@ function refresh() {
   if (busy) { sendBtn.dataset.stop = ''; sendBtn.setAttribute('aria-label', 'Stop'); $('#sendIcon').innerHTML = '<rect x="7" y="7" width="10" height="10" rx="2"/>'; }
   else { delete sendBtn.dataset.stop; sendBtn.setAttribute('aria-label', 'Send'); $('#sendIcon').innerHTML = '<path d="M12 19V5M6 11l6-6 6 6"/>'; }
   $('#wake').textContent = 'Download my brain (' + modelInfo().note.split(',')[0] + ')';
-  $('#setupHint').textContent = 'The first answer can take a few seconds. Smaller models answer faster.';
+  $('#setupHint').textContent = '';
 }
 
-/* ---------------- Belgo's computer (v86) ---------------- */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const PC = (() => {
-  const CDN = 'https://cdn.jsdelivr.net/npm/v86/';
-  const screen = $('#screen');
-  let emu = null, gfx = false, fitT = 0;
-  const SC = { esc: [1], enter: [0x1c], space: [0x39], tab: [0x0f], backspace: [0x0e], ctrl: [0x1d], alt: [0x38], shift: [0x2a],
-    up: [0xe0, 0x48], down: [0xe0, 0x50], left: [0xe0, 0x4b], right: [0xe0, 0x4d] };
-  [['1234567890', 2], ['qwertyuiop', 0x10], ['asdfghjkl', 0x1e], ['zxcvbnm', 0x2c]].forEach(([row, b]) => [...row].forEach((c, i) => { SC[c] = [b + i]; }));
-  for (let i = 1; i <= 10; i++) SC['f' + i] = [0x3a + i];
-  const ALIAS = { return: 'enter', escape: 'esc', control: 'ctrl', fire: 'ctrl', use: 'space' };
-  const code = k => { k = String(k).trim().toLowerCase(); return SC[ALIAS[k] || k]; };
-  const down = k => { const c = code(k); if (emu && c) emu.keyboard_send_scancodes(c); };
-  const up = k => { const c = code(k); if (emu && c) emu.keyboard_send_scancodes(c.map((v, i) => i === c.length - 1 ? v | 0x80 : v)); };
-  async function tap(k, ms = 90) { down(k); await sleep(ms); up(k); }
-  async function type(text) {
-    const parts = text.replace(/\\n/g, '\n').split('\n');
-    for (let i = 0; i < parts.length; i++) {
-      if (parts[i]) { emu.keyboard_send_text(parts[i]); await sleep(120 + parts[i].length * 12); }
-      if (i < parts.length - 1) await tap('enter');
-    }
-  }
-  function isGfx() { try { const v = emu.v86.cpu.devices.vga.graphical_mode; if (typeof v === 'boolean') return v; } catch {} return gfx; }
-  function text() {
-    let rows = [];
-    try { rows = emu.screen_adapter.get_text_screen(); } catch {}
-    if (!rows || !rows.length) { const d = screen.firstElementChild; rows = d ? [...d.children].map(c => c.textContent) : []; }
-    return rows.map(r => String(r).replace(/\s+$/, '')).join('\n').replace(/^\n+|\n+$/g, '').slice(-1800);
-  }
-  function report() {
-    if (!emu) return 'The computer is switched off.';
-    if (isGfx()) return 'Computer screen: graphics mode (a game or picture is showing). You cannot see it, but your keys still work.';
-    return 'Computer screen now:\n' + (text() || '(blank)');
-  }
-  function prompt() {
-    if (!emu) return '';
-    return '\n\nYou have your own computer, an emulated PC that booted from the disc the user gave you. Control it by writing commands in double square brackets:\n' +
-      '[[type: dir]] types text. [[key: enter]] presses a key (enter, esc, space, tab, backspace, up, down, left, right, ctrl, alt, y, n, f1 to f10, letters, digits). ' +
-      '[[hold: up 1000]] holds a key for that many milliseconds. [[wait: 3]] waits seconds.\n' +
-      'To run a DOS command, type it and then press enter. Use only a few commands per reply. After your commands you will be shown the screen again. When you are finished, answer the user without any commands.\n\n' + report();
-  }
-  function parse(out) {
-    const acts = [], re = /\[\[\s*(type|key|hold|wait|image)\s*:\s*([^\]]*)\]\]/gi;
-    let m; while ((m = re.exec(out)) && acts.length < 8) acts.push([m[1].toLowerCase(), m[2]]);
-    return acts;
-  }
-  async function run(acts, cancelled) {
-    for (const [kind, arg] of acts) {
-      if (!emu || cancelled()) return;
-      if (kind === 'type') await type(arg.replace(/^ /, ''));
-      else if (kind === 'key') await tap(arg);
-      else if (kind === 'hold') { const [k, ms] = arg.trim().split(/\s+/); await tap(k, clamp(+ms || 500, 50, 3000)); }
-      else if (kind === 'wait') await sleep(clamp((+arg || 1) * 1000, 100, 10000));
-      await sleep(250);
-    }
-    await sleep(1300);
-  }
-  async function loadV86() {
-    for (const url of [CDN + 'build/libv86.mjs', 'https://esm.run/v86']) {
-      try { const m = await import(url); const V = m.V86 || m.V86Starter || m.default; if (V) return V; } catch {}
-    }
-    await new Promise((ok, no) => { const s = document.createElement('script'); s.src = CDN + 'build/libv86.js'; s.onload = ok; s.onerror = () => no(new Error('The emulator files could not be downloaded.')); document.head.append(s); });
-    const V = window.V86 || window.V86Starter;
-    if (!V) throw new Error('The emulator loaded but did not start.');
-    return V;
-  }
-  function fit() {
-    const d = screen.firstElementChild;
-    if (d && d.offsetWidth) d.style.transform = 'scale(' + Math.min(screen.clientWidth / d.offsetWidth, screen.clientHeight / d.offsetHeight) + ')';
-  }
-  function setKb(on) { try { (emu.keyboard_set_enabled || emu.keyboard_set_status).call(emu, on); } catch {} }
-  async function off() {
-    clearInterval(fitT);
-    if (emu) { try { await emu.destroy(); } catch {} }
-    emu = null; gfx = false;
-    $('#pcEmpty').hidden = false; $('#pcOff').hidden = true; $('#pad').hidden = true; $('#pcName').textContent = '';
-  }
-  async function boot(file) {
-    await off();
-    $('#pcName').textContent = 'Starting ' + file.name + '…';
-    try {
-      const V86 = await loadV86();
-      const opt = { wasm_path: CDN + 'build/v86.wasm', memory_size: 64 << 20, vga_memory_size: 8 << 20, screen_container: screen,
-        bios: { url: CDN + 'bios/seabios.bin' }, vga_bios: { url: CDN + 'bios/vgabios.bin' }, autostart: true, disable_mouse: true };
-      const src = file instanceof File ? { buffer: file } : { url: file.url };
-      if (/\.iso$/i.test(file.name)) opt.cdrom = src;
-      else if (file.size && file.size <= 2949120) opt.fda = src;
-      else opt.hda = src;
-      emu = new V86(opt);
-      try { emu.add_listener('screen-set-mode', g => { gfx = !!g; }); } catch {}
-      setKb(document.activeElement === screen);
-      fitT = setInterval(fit, 700);
-      $('#pcEmpty').hidden = true; $('#pcOff').hidden = false; $('#pad').hidden = false;
-      $('#pcName').textContent = file.name;
-      note('Belgo has a computer now, booted from ' + file.name + '. Ask him to use it, or click the screen to play yourself.');
-      Peg.hello();
-    } catch (e) {
-      await off();
-      note('The computer did not start: ' + (e?.message || e), true);
-      Peg.flash('shrug', 1400);
-    }
-  }
-  screen.addEventListener('focus', () => setKb(true));
-  screen.addEventListener('blur', () => setKb(false));
-  screen.addEventListener('pointerdown', () => screen.focus());
-  $('#pad').querySelectorAll('button').forEach(b => {
-    const k = b.dataset.k;
-    b.addEventListener('pointerdown', e => { e.preventDefault(); down(k); });
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => up(k)));
-    b.addEventListener('contextmenu', e => e.preventDefault());
-  });
-  $('#pcInsert').addEventListener('click', () => $('#pcFile').click());
-  $('#pcFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) boot(f); });
-  $('#pcOff').addEventListener('click', off);
-  /* A disc published next to this page (disc.iso or disc.img) becomes the built-in disc. */
-  let builtin = null;
-  (async () => {
-    if (!/^https?:$/.test(location.protocol)) return;
-    for (const name of ['disc.iso', 'disc.img']) {
-      try {
-        const r = await fetch(name, { method: 'HEAD' });
-        if (!r.ok || /text\/html/i.test(r.headers.get('content-type') || '')) continue;
-        builtin = { url: new URL(name, location.href).href, name, size: +r.headers.get('content-length') || 0 };
-        $('#pcBuiltin').hidden = false;
-        $('#pcEmpty').querySelector('span').textContent = 'A disc is ready. Press Start built-in disc and Belgo boots it, reads the screen while it shows text and presses the keys himself. You can play on it too.';
-        return;
-      } catch {}
-    }
-  })();
-  $('#pcBuiltin').addEventListener('click', () => { if (builtin) boot(builtin); });
-  $('#openPc').addEventListener('click', () => {
-    const show = $('#pc').hidden; $('#pc').hidden = !show;
-    $('#openPc').setAttribute('aria-pressed', String(show));
-    if (show) fit();
-  });
-  return { on: () => !!emu, prompt, report, parse, run };
-})();
 
 /* ---------------- on-device brain (wllama) ---------------- */
 /* wllama runs llama.cpp as WebAssembly on the processor. It does not touch the graphics card,
@@ -607,6 +444,7 @@ async function getWllama() {
 }
 async function loadLocal() {
   if (loading) return;
+  cfg.mode = 'local'; saveCfg();
   loading = true; Peg.progress(0); Peg.setBase('load'); setStatus('busy', 'Loading 0%'); refresh();
   try {
     try { await navigator.storage?.persist?.(); } catch {}
@@ -700,8 +538,48 @@ async function* localStream(messages) {
     throw e;
   }
 }
+async function* githubStream(messages) {
+  aborter = new AbortController();
+  let res;
+  try {
+    res = await fetch('https://models.github.ai/inference/chat/completions', {
+      method: 'POST', signal: aborter.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + cfg.token },
+      body: JSON.stringify({ model: cfg.ghModel, messages, stream: true, max_tokens: 1200 })
+    });
+  } catch (e) {
+    if (e?.name === 'AbortError') throw e;
+    throw new Error('Belgo could not reach GitHub Models from this page. Check your connection.');
+  }
+  if (!res.ok) {
+    let detail = ''; try { const j = await res.json(); detail = j.error?.message || j.message || ''; } catch {}
+    if (res.status === 401 || res.status === 403) throw new Error('GitHub did not accept the token. Check in settings that it is pasted fully and has the Models permission set to Read-only.');
+    if (res.status === 429) throw new Error('The free GitHub Models limit is used up for now. Try again later or pick another model in settings.');
+    if (res.status === 404 || res.status === 400) throw new Error('GitHub does not know the model "' + cfg.ghModel + '". Pick another in settings.' + (detail ? ' (' + detail + ')' : ''));
+    throw new Error('GitHub Models answered ' + res.status + (detail ? ': ' + detail : '') + '.');
+  }
+  if (/json/i.test(res.headers.get('content-type') || '')) {
+    const j = await res.json(); const t = j.choices?.[0]?.message?.content; if (t) yield t; return;
+  }
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      const row = line.trim();
+      if (!row.startsWith('data:')) continue;
+      const data = row.slice(5).trim();
+      if (data === '[DONE]') return;
+      try { const t = JSON.parse(data).choices?.[0]?.delta?.content; if (t) yield t; } catch {}
+    }
+  }
+}
+
 /* ---------------- pictures (no key) ----------------
-   Tried in order: Z-Image-Turbo, then FLUX.2 klein, both on public Hugging Face Spaces; Pollinations is the last resort. */
+   Z-Image-Turbo first, FLUX.2 klein as the backup, both on public Hugging Face Spaces. */
 async function gradio(base, endpoint, data, ms = 150000) {
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
   try {
@@ -741,9 +619,6 @@ const PAINTERS = [
       const out = await gradio(base, 'infer', [text, [], 'Distilled (4 steps)', 0, true, 1024, 1024, 4, 1, false]);
       return fileUrl(base, out?.[0]);
     } },
-  { name: 'Pollinations', async run(text) {
-      return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(text) + '?width=768&height=768&nologo=true&seed=' + Math.floor(Math.random() * 1e9);
-    } },
 ];
 const showImg = (im, url) => new Promise((ok, no) => { im.onload = ok; im.onerror = () => no(new Error('the picture did not load')); im.src = url; });
 const Pic = {
@@ -771,7 +646,7 @@ const Pic = {
         } catch {}
       }
       box.remove();
-      const m = 'All three free picture services are busy or over their free limit right now. Try again in a minute.';
+      const m = 'The free picture services are busy or over their free limit right now. Try again in a minute.';
       note(m, true); return 'The picture failed: ' + m;
     } finally { clearInterval(tick); }
   }
@@ -787,7 +662,7 @@ async function paint(text) {
 
 async function streamOne(messages) {
   let out = '', bubble = null;
-  const gen = localStream(messages);
+  const gen = onGh() ? githubStream(messages) : localStream(messages);
   for await (const t of gen) {
     if (!bubble) { bubble = add('msg bot', ''); Peg.setBase('talk'); setStatus('busy', 'Answering'); }
     out += t;
@@ -804,24 +679,14 @@ async function send() {
   history.push({ role: 'user', content: text });
   add('msg user', text);
   busy = true; stopped = false; refresh();
-  const turn = []; let out = '', steps = 0;
+  let out = '';
   try {
-    for (;;) {
-      setStatus('busy', 'Thinking'); Peg.setBase('think');
-      const messages = [{ role: 'system', content: SYSTEM + PC.prompt() + Pic.prompt }, ...history.slice(-6), ...turn.slice(-4)];
-      out = await streamOne(messages);
-      const all = PC.parse(out), pic = all.find(a => a[0] === 'image');
-      const acts = PC.on() ? all.filter(a => a[0] !== 'image') : [];
-      if (pic && !stopped) { setStatus('busy', 'Painting'); Peg.setBase('think'); await paint(pic[1]); }
-      if (!out || !acts.length || stopped || steps >= 6) break;
-      turn.push({ role: 'assistant', content: out });
-      setStatus('busy', 'Using his computer'); Peg.setBase('type');
-      await PC.run(acts, () => stopped);
-      turn.push({ role: 'user', content: PC.report() });
-      steps++;
-    }
+    setStatus('busy', 'Thinking'); Peg.setBase('think');
+    out = await streamOne([{ role: 'system', content: SYSTEM + Pic.prompt }, ...history.slice(onGh() ? -16 : -6)]);
+    const pic = /\[\[\s*image\s*:\s*([^\]]+)\]\]/i.exec(out);
+    if (pic && !stopped) { setStatus('busy', 'Painting'); Peg.setBase('think'); await paint(pic[1]); }
     if (out) history.push({ role: 'assistant', content: out });
-    else if (!stopped && !turn.length) note('Belgo had nothing to say. Try asking again.');
+    else if (!stopped) note('Belgo had nothing to say. Try asking again.');
   } catch (e) {
     if (e?.name !== 'AbortError') {
       const hint = '';
@@ -857,17 +722,32 @@ $('#picBtn').addEventListener('click', () => {
 /* ---------------- settings sheet ---------------- */
 const dlg = $('#settings');
 $('#model').innerHTML = MODELS.map(m => `<option value="${m.id}">${m.label} (${m.note})</option>`).join('');
-$('#openSettings').addEventListener('click', () => { $('#model').value = cfg.model; dlg.showModal(); });
+function showGroups() { $('#ghGroup').hidden = !$('#modeGh').checked; $('#localGroup').hidden = !$('#modeLocal').checked; }
+function openSettings(mode) {
+  $('#modeGh').checked = (mode || cfg.mode) === 'github'; $('#modeLocal').checked = !$('#modeGh').checked;
+  $('#model').value = cfg.model; $('#ghToken').value = cfg.token; $('#ghModel').value = cfg.ghModel; $('#ghRemember').checked = cfg.remember;
+  showGroups(); dlg.showModal();
+}
+$('#modeGh').addEventListener('change', showGroups);
+$('#modeLocal').addEventListener('change', showGroups);
+$('#openSettings').addEventListener('click', () => openSettings());
+$('#useGh').addEventListener('click', () => openSettings('github'));
 dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close('cancel'); });
 dlg.addEventListener('close', () => {
   if (dlg.returnValue !== 'save') return;
-  cfg.model = $('#model').value; saveCfg();
-  if (engine && engineId !== cfg.model) {
-    try { engine.exit(); } catch {}
-    engine = null; engineId = '';
-    note('Belgo needs to download ' + modelInfo().label + ' before answering.');
-    refresh(); $('#setup').hidden = false;
-  } else refresh();
+  const wasReady = isReady(), before = cfg.mode + cfg.ghModel;
+  cfg.mode = $('#modeGh').checked ? 'github' : 'local';
+  cfg.model = $('#model').value;
+  cfg.token = $('#ghToken').value.trim();
+  cfg.ghModel = $('#ghModel').value.trim() || 'openai/gpt-4.1-mini';
+  cfg.remember = $('#ghRemember').checked;
+  saveCfg();
+  if (engine && engineId !== cfg.model) { try { engine.exit(); } catch {} engine = null; engineId = ''; }
+  refresh();
+  if (onGh()) {
+    if (!cfg.token) note('Paste a GitHub token in settings so Belgo can use GitHub Models.', true);
+    else if (!wasReady || before !== cfg.mode + cfg.ghModel) { note('Belgo is awake and answers through GitHub Models (' + cfg.ghModel + ').'); Peg.hello(); }
+  } else if (!engine) { note('Belgo needs to download ' + modelInfo().label + ' before answering.'); $('#setup').hidden = false; }
 });
 $('#clearChat').addEventListener('click', () => {
   history = [];

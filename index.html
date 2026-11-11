@@ -274,11 +274,12 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     <label class="field"><span>What should the video show?</span>
       <textarea id="vidPrompt" rows="2" placeholder="A ginger cat dozing on a windowsill after the rain"></textarea></label>
     <div class="pc-bar">
+      <select id="vidMode" aria-label="Video style"><option value="story" selected>Unlimited</option><option value="ltx">Real motion</option></select>
       <select id="vidDur" aria-label="Length"><option value="2">2 seconds</option><option value="4" selected>4 seconds</option><option value="6">6 seconds</option><option value="8">8 seconds</option></select>
       <button class="btn sm primary" id="vidGo" type="button">Make video</button>
       <span class="hint" id="vidMsg">No key or sign-up needed.</span>
     </div>
-    <p class="hint">Made with LTX-Video by Lightricks on a free public Hugging Face Space. Free use is limited each day, and longer videos use it up faster.</p>
+    <p class="hint" id="vidHint"></p>
   </section>
 
   <main id="log" aria-live="polite">
@@ -366,6 +367,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
       <p>On-device answers run on <a href="https://webllm.mlc.ai" target="_blank" rel="noopener">WebLLM</a> by the MLC AI team.</p>
       <p>His computer is <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a>, the x86 emulator by Fabian Hemmer and contributors.</p>
       <p>Videos are made with <a href="https://huggingface.co/spaces/Lightricks/ltx-video-distilled" target="_blank" rel="noopener">LTX-Video</a> by Lightricks, on their public Hugging Face Space.</p>
+      <p>Unlimited videos use pictures from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>.</p>
     </div>
   </form>
 </dialog>
@@ -629,48 +631,120 @@ const PC = (() => {
   return { on: () => !!emu, prompt, report, parse, run };
 })();
 
-/* ---------------- video maker (LTX-Video by Lightricks, public Hugging Face Space, no key) ---------------- */
+/* ---------------- video maker ----------------
+   Unlimited: pictures from Pollinations (Flux, no key) animated and recorded in the browser.
+   Real motion: LTX-Video by Lightricks on a public Hugging Face Space (no key, daily limit). */
 const Video = (() => {
   const SPACE = 'https://lightricks-ltx-video-distilled.hf.space/gradio_api/call/text_to_video';
-  let running = false;
+  const HINTS = {
+    story: 'Unlimited: free pictures of your scene are painted by Pollinations, then Belgo animates them into a video on your device. No key and no daily limit, but the motion is slow camera moves, not real movement.',
+    ltx: 'Real motion: made with LTX-Video by Lightricks on a free public Hugging Face Space. No key, but free use is capped each day.'
+  };
+  let running = false, phase = '';
   const msg = t => { $('#vidMsg').textContent = t; };
+  const aborted = () => new DOMException('Stopped', 'AbortError');
+
+  async function ltx(prompt, seconds, signal) {
+    const data = [prompt, 'worst quality, inconsistent motion, blurry, jittery, distorted', null, null, 512, 704,
+      'text-to-video', clamp(+seconds || 4, 1, 8), 9, 42, true, 1, true];
+    const r = await fetch(SPACE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data }), signal });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.event_id) throw new Error(j.detail || j.error || 'The video service answered ' + r.status + '.');
+    const res = await fetch(SPACE + '/' + j.event_id, { signal });
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = '', event = '', out = null;
+    read: for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (line.startsWith('event:')) event = line.slice(6).trim();
+        else if (line.startsWith('data:')) {
+          let d = null; try { d = JSON.parse(line.slice(5)); } catch {}
+          if (event === 'complete') { out = d; break read; }
+          if (event === 'error') throw new Error((typeof d === 'string' ? d : d?.error || d?.message) || 'The free daily limit may be used up, or the service is busy. Switch to Unlimited or try again later.');
+        }
+      }
+    }
+    const v = out?.[0], url = v?.video?.url || v?.url || (typeof v === 'string' ? v : '');
+    if (!url) throw new Error('The service finished without returning a video.');
+    return url;
+  }
+
+  function loadImg(url, signal) {
+    return new Promise((ok, no) => {
+      const im = new Image(); im.crossOrigin = 'anonymous';
+      const t = setTimeout(() => no(new Error('The picture service took too long. Try again in a moment.')), 120000);
+      signal.addEventListener('abort', () => { clearTimeout(t); im.src = ''; no(aborted()); }, { once: true });
+      im.onload = () => { clearTimeout(t); ok(im); };
+      im.onerror = () => { clearTimeout(t); no(new Error('The picture service did not answer. Try again in a moment.')); };
+      im.src = url;
+    });
+  }
+  async function story(prompt, seconds, signal) {
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) throw new Error('This browser cannot record video. Switch to Real motion.');
+    const W = 704, H = 512, n = clamp(Math.round(seconds / 2), 2, 4);
+    const shots = ['wide establishing shot', 'medium shot', 'close-up detail', 'dramatic low angle'];
+    const imgs = [];
+    for (let i = 0; i < n; i++) {
+      phase = 'Painting picture ' + (i + 1) + ' of ' + n;
+      const q = encodeURIComponent(prompt + ', ' + shots[i] + ', cinematic film still');
+      imgs.push(await loadImg('https://image.pollinations.ai/prompt/' + q + '?width=' + W + '&height=' + H + '&seed=' + Math.floor(Math.random() * 1e9) + '&nologo=true', signal));
+    }
+    phase = 'Filming';
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    const type = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    let rec;
+    try { rec = new MediaRecorder(cv.captureStream(30), type ? { mimeType: type } : {}); }
+    catch { throw new Error('This browser blocked recording the pictures. Switch to Real motion.'); }
+    const chunks = []; rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    const total = seconds * 1000, per = total / n, fade = Math.min(600, per / 3);
+    const draw = (i, el, alpha) => {
+      const t = clamp((el - (i * per - fade)) / (per + fade), 0, 1);
+      const z = i % 2 ? 1.2 - 0.14 * t : 1.06 + 0.14 * t, w = W * z, h = H * z;
+      const pan = (i % 2 ? 1 : -1) * (t - 0.5) * W * 0.05;
+      g.globalAlpha = alpha; g.drawImage(imgs[i], (W - w) / 2 + pan, (H - h) / 2, w, h);
+    };
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H); draw(0, 0, 1);
+    rec.start();
+    await new Promise((ok, no) => {
+      const t0 = performance.now();
+      const frame = now => {
+        if (signal.aborted) { try { rec.stop(); } catch {} return no(aborted()); }
+        const el = now - t0;
+        if (el >= total) return ok();
+        const i = Math.min(n - 1, Math.floor(el / per));
+        g.globalAlpha = 1; g.fillRect(0, 0, W, H);
+        draw(i, el, 1);
+        const next = (i + 1) * per - fade;
+        if (i < n - 1 && el > next) draw(i + 1, el, (el - next) / fade);
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    });
+    await new Promise(r => { rec.onstop = r; rec.stop(); });
+    if (!chunks.length) throw new Error('The recording came out empty. Keep this tab in front while Belgo films.');
+    return URL.createObjectURL(new Blob(chunks, { type: rec.mimeType || 'video/webm' }));
+  }
+
   async function make(prompt, seconds, cancelled = () => false) {
     prompt = String(prompt || '').trim();
     if (!prompt) return 'No description was given.';
     if (running) return 'A video is already being made.';
-    running = true; $('#vidGo').disabled = true;
+    running = true; $('#vidGo').disabled = true; phase = 'Making your video';
+    seconds = clamp(+seconds || 4, 2, 8);
     const t0 = Date.now();
     const tick = setInterval(() => {
       const sec = Math.round((Date.now() - t0) / 1000);
-      msg('Making your video… ' + sec + 's'); Peg.progress(1); $('#liftText').textContent = sec + 's';
+      msg(phase + '… ' + sec + 's'); Peg.progress(1); $('#liftText').textContent = sec + 's';
     }, 1000);
     const ctl = new AbortController();
     const watch = setInterval(() => { if (cancelled()) ctl.abort(); }, 500);
     try {
-      const data = [prompt, 'worst quality, inconsistent motion, blurry, jittery, distorted', null, null, 512, 704,
-        'text-to-video', clamp(+seconds || 4, 1, 8), 9, 42, true, 1, true];
-      const r = await fetch(SPACE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data }), signal: ctl.signal });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j.event_id) throw new Error(j.detail || j.error || 'The video service answered ' + r.status + '.');
-      const res = await fetch(SPACE + '/' + j.event_id, { signal: ctl.signal });
-      const reader = res.body.getReader(), dec = new TextDecoder();
-      let buf = '', event = '', out = null;
-      read: for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split('\n'); buf = lines.pop();
-        for (const line of lines) {
-          if (line.startsWith('event:')) event = line.slice(6).trim();
-          else if (line.startsWith('data:')) {
-            let d = null; try { d = JSON.parse(line.slice(5)); } catch {}
-            if (event === 'complete') { out = d; break read; }
-            if (event === 'error') throw new Error((typeof d === 'string' ? d : d?.error || d?.message) || 'The free daily limit may be used up, or the service is busy. Try again later.');
-          }
-        }
-      }
-      const v = out?.[0], url = v?.video?.url || v?.url || (typeof v === 'string' ? v : '');
-      if (!url) throw new Error('The service finished without returning a video.');
+      const url = $('#vidMode').value === 'ltx' ? await ltx(prompt, seconds, ctl.signal) : await story(prompt, seconds, ctl.signal);
+      const old = $('#vidPlayer').src; if (old.startsWith('blob:')) URL.revokeObjectURL(old);
       $('#vidPlayer').src = url; $('#vidOut').hidden = false;
       $('#vid').hidden = false; $('#pc').hidden = true;
       $('#openVideo').setAttribute('aria-pressed', 'true'); $('#openPc').setAttribute('aria-pressed', 'false');
@@ -685,6 +759,8 @@ const Video = (() => {
       return 'The video failed: ' + m;
     } finally { clearInterval(tick); clearInterval(watch); running = false; $('#vidGo').disabled = false; }
   }
+  const setHint = () => { $('#vidHint').textContent = HINTS[$('#vidMode').value]; };
+  $('#vidMode').addEventListener('change', setHint); setHint();
   $('#vidGo').addEventListener('click', async () => {
     const text = $('#vidPrompt').value.trim();
     if (!text) { msg('Describe the video first.'); $('#vidPrompt').focus(); return; }

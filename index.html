@@ -270,27 +270,15 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
   </section>
 
   <section id="vid" hidden aria-label="Video maker">
-    <div id="vidOut" hidden><video id="vidPlayer" controls playsinline></video></div>
+    <div id="vidOut" hidden><video id="vidPlayer" controls playsinline loop></video></div>
     <label class="field"><span>What should the video show?</span>
       <textarea id="vidPrompt" rows="2" placeholder="A ginger cat dozing on a windowsill after the rain"></textarea></label>
     <div class="pc-bar">
-      <select id="vidDur" aria-label="Length"><option value="5">5 seconds</option><option value="8">8 seconds</option><option value="10">10 seconds</option></select>
+      <select id="vidDur" aria-label="Length"><option value="2">2 seconds</option><option value="4" selected>4 seconds</option><option value="6">6 seconds</option><option value="8">8 seconds</option></select>
       <button class="btn sm primary" id="vidGo" type="button">Make video</button>
-      <span class="hint" id="vidMsg">Not connected yet.</span>
+      <span class="hint" id="vidMsg">No key or sign-up needed.</span>
     </div>
-    <div class="vbar" id="vidBar" hidden><b></b></div>
-    <details id="vidSetup">
-      <summary>Generator connection</summary>
-      <p class="hint">Videos are made by Agnes Video Generator by lcy362, a free program that runs on your own computer. Belgo sends it your description and shows the result.</p>
-      <ol>
-        <li>Get a free key at platform.agnes-ai.com.</li>
-        <li>On the computer you open Belgo on, start the generator so it accepts this page:<br><code id="vidCmd"></code></li>
-        <li>Open <code>http://localhost:8765</code> once and save your key there.</li>
-        <li>Come back here and press Check connection.</li>
-      </ol>
-      <label class="field"><span>Generator address</span><input id="vidBase" type="url" inputmode="url" placeholder="http://localhost:8765" autocomplete="off"></label>
-      <div class="row" style="margin-top:8px"><button class="btn sm" id="vidCheck" type="button">Check connection</button></div>
-    </details>
+    <p class="hint">Made with LTX-Video by Lightricks on a free public Hugging Face Space. Free use is limited each day, and longer videos use it up faster.</p>
   </section>
 
   <main id="log" aria-live="polite">
@@ -377,7 +365,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
       <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
       <p>On-device answers run on <a href="https://webllm.mlc.ai" target="_blank" rel="noopener">WebLLM</a> by the MLC AI team.</p>
       <p>His computer is <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a>, the x86 emulator by Fabian Hemmer and contributors.</p>
-      <p>Videos come from <a href="https://github.com/lcy362/agnes-video-generator" target="_blank" rel="noopener">Agnes Video Generator</a> by lcy362.</p>
+      <p>Videos are made with <a href="https://huggingface.co/spaces/Lightricks/ltx-video-distilled" target="_blank" rel="noopener">LTX-Video</a> by Lightricks, on their public Hugging Face Space.</p>
     </div>
   </form>
 </dialog>
@@ -394,7 +382,7 @@ const MODELS = [
   { id: 'Qwen2.5-1.5B-Instruct', label: 'Qwen 2.5 1.5B', note: 'about 1.6 GB' },
   { id: 'Phi-3.5-mini-instruct', label: 'Phi 3.5 mini', note: 'about 3.7 GB, needs a strong device' },
 ];
-const cfg = { mode: 'local', model: 'Llama-3.2-1B-Instruct', base: 'https://api.openai.com/v1', apiModel: '', key: '', remember: false, videoBase: 'http://localhost:8765' };
+const cfg = { mode: 'local', model: 'Llama-3.2-1B-Instruct', base: 'https://api.openai.com/v1', apiModel: '', key: '', remember: false };
 try { Object.assign(cfg, JSON.parse(localStorage.getItem(LS) || '{}')); } catch {}
 function saveCfg() {
   try {
@@ -641,58 +629,62 @@ const PC = (() => {
   return { on: () => !!emu, prompt, report, parse, run };
 })();
 
-/* ---------------- video maker (Agnes Video Generator by lcy362) ---------------- */
+/* ---------------- video maker (LTX-Video by Lightricks, public Hugging Face Space, no key) ---------------- */
 const Video = (() => {
-  let ok = false, running = false;
-  const api = path => (cfg.videoBase || 'http://localhost:8765').replace(/\/+$/, '') + path;
+  const SPACE = 'https://lightricks-ltx-video-distilled.hf.space/gradio_api/call/text_to_video';
+  let running = false;
   const msg = t => { $('#vidMsg').textContent = t; };
-  const detail = j => typeof j?.detail === 'string' ? j.detail : (Array.isArray(j?.detail) ? j.detail.map(d => d.msg).join(' ') : '');
-  async function ping() {
-    try { const r = await fetch(api('/api/config')); ok = r.ok; } catch { ok = false; }
-    msg(ok ? 'Connected to the generator.' : 'Not connected. Open Generator connection for the steps.');
-    return ok;
-  }
   async function make(prompt, seconds, cancelled = () => false) {
     prompt = String(prompt || '').trim();
     if (!prompt) return 'No description was given.';
     if (running) return 'A video is already being made.';
     running = true; $('#vidGo').disabled = true;
-    const bar = $('#vidBar'); bar.hidden = false; bar.style.setProperty('--vp', '2%'); Peg.progress(0);
+    const t0 = Date.now();
+    const tick = setInterval(() => {
+      const sec = Math.round((Date.now() - t0) / 1000);
+      msg('Making your video… ' + sec + 's'); Peg.progress(1); $('#liftText').textContent = sec + 's';
+    }, 1000);
+    const ctl = new AbortController();
+    const watch = setInterval(() => { if (cancelled()) ctl.abort(); }, 500);
     try {
-      const fd = new FormData(); fd.append('prompt', prompt); fd.append('duration', String(seconds || 5));
-      msg('Sending the description…');
-      const r = await fetch(api('/api/tasks/simple'), { method: 'POST', body: fd, headers: { 'X-Agnes-UI-Lang': 'en' } });
+      const data = [prompt, 'worst quality, inconsistent motion, blurry, jittery, distorted', null, null, 512, 704,
+        'text-to-video', clamp(+seconds || 4, 1, 8), 9, 42, true, 1, true];
+      const r = await fetch(SPACE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data }), signal: ctl.signal });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j.task_id) throw new Error(detail(j) || 'The generator answered ' + r.status + '.');
-      ok = true;
-      for (let i = 0; i < 600; i++) {
-        await sleep(2000);
-        if (cancelled()) { msg('Stopped watching. The generator may still finish it.'); return 'The user stopped waiting for the video.'; }
-        const d = await (await fetch(api('/api/tasks/' + j.task_id), { headers: { 'X-Agnes-UI-Lang': 'en' } })).json();
-        const p = clamp(+(d.current_progress ?? d.progress ?? 0) || 0, 0, 1);
-        bar.style.setProperty('--vp', Math.max(2, p * 100) + '%'); Peg.progress(p);
-        msg((d.current_message || d.message || 'Working') + ' ' + Math.round(p * 100) + '%');
-        if (d.status === 'completed') {
-          $('#vidPlayer').src = api('/api/video/' + j.task_id); $('#vidOut').hidden = false;
-          $('#vid').hidden = false; $('#pc').hidden = true;
-          $('#openVideo').setAttribute('aria-pressed', 'true'); $('#openPc').setAttribute('aria-pressed', 'false');
-          msg('Done. Use the player menu to save it.');
-          return 'The video is finished and is showing in the video panel.';
+      if (!r.ok || !j.event_id) throw new Error(j.detail || j.error || 'The video service answered ' + r.status + '.');
+      const res = await fetch(SPACE + '/' + j.event_id, { signal: ctl.signal });
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let buf = '', event = '', out = null;
+      read: for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n'); buf = lines.pop();
+        for (const line of lines) {
+          if (line.startsWith('event:')) event = line.slice(6).trim();
+          else if (line.startsWith('data:')) {
+            let d = null; try { d = JSON.parse(line.slice(5)); } catch {}
+            if (event === 'complete') { out = d; break read; }
+            if (event === 'error') throw new Error((typeof d === 'string' ? d : d?.error || d?.message) || 'The free daily limit may be used up, or the service is busy. Try again later.');
+          }
         }
-        if (d.status === 'failed') throw new Error(d.current_message || d.error || 'The generator could not make this video.');
       }
-      throw new Error('The video took longer than 20 minutes.');
+      const v = out?.[0], url = v?.video?.url || v?.url || (typeof v === 'string' ? v : '');
+      if (!url) throw new Error('The service finished without returning a video.');
+      $('#vidPlayer').src = url; $('#vidOut').hidden = false;
+      $('#vid').hidden = false; $('#pc').hidden = true;
+      $('#openVideo').setAttribute('aria-pressed', 'true'); $('#openPc').setAttribute('aria-pressed', 'false');
+      clearInterval(tick); msg('Done in ' + Math.round((Date.now() - t0) / 1000) + 's. Use the player menu to save it.');
+      $('#vidPlayer').play?.().catch(() => {});
+      return 'The video is finished and is showing in the video panel.';
     } catch (e) {
-      const m = e instanceof TypeError ? 'Belgo could not reach the generator. Check that it is running and accepts this page.' : (e?.message || String(e));
-      if (e instanceof TypeError) ok = false;
+      clearInterval(tick);
+      if (e?.name === 'AbortError') { msg('Stopped.'); return 'The user stopped the video.'; }
+      const m = e instanceof TypeError ? 'Belgo could not reach the video service. Check your connection and try again.' : (e?.message || String(e));
       msg(m);
       return 'The video failed: ' + m;
-    } finally { running = false; $('#vidGo').disabled = false; bar.hidden = true; }
+    } finally { clearInterval(tick); clearInterval(watch); running = false; $('#vidGo').disabled = false; }
   }
-  $('#vidCmd').textContent = 'AGNES_CORS_ORIGINS=' + (/^https?:$/.test(location.protocol) ? location.origin : 'null') + ' npx free-short-video';
-  $('#vidBase').value = cfg.videoBase;
-  $('#vidBase').addEventListener('change', e => { cfg.videoBase = e.target.value.trim() || 'http://localhost:8765'; saveCfg(); });
-  $('#vidCheck').addEventListener('click', async () => { msg('Checking…'); if (await ping()) { $('#vidSetup').open = false; Peg.hello(); } else Peg.flash('shrug', 1400); });
   $('#vidGo').addEventListener('click', async () => {
     const text = $('#vidPrompt').value.trim();
     if (!text) { msg('Describe the video first.'); $('#vidPrompt').focus(); return; }
@@ -703,10 +695,10 @@ const Video = (() => {
   $('#openVideo').addEventListener('click', () => {
     const show = $('#vid').hidden; $('#vid').hidden = !show;
     $('#openVideo').setAttribute('aria-pressed', String(show));
-    if (show) { $('#pc').hidden = true; $('#openPc').setAttribute('aria-pressed', 'false'); if (!ok && !running) ping().then(c => { $('#vidSetup').open = !c; }); }
+    if (show) { $('#pc').hidden = true; $('#openPc').setAttribute('aria-pressed', 'false'); }
   });
-  return { make, ready: () => ok,
-    prompt: () => ok ? '\n\nYou can make a short video. Write [[video: a clear description of the scene]] on its own line. It takes a few minutes. Do this only when the user asks for a video.' : '' };
+  return { make, ready: () => true,
+    prompt: () => '\n\nYou can make a short video. Write [[video: a clear description of the scene in English]] on its own line. It takes about a minute. Do this only when the user asks for a video.' };
 })();
 
 /* ---------------- on-device brain (WebLLM) ---------------- */
@@ -814,7 +806,7 @@ async function send() {
       }
       if (film && !stopped) {
         setStatus('busy', 'Making a video'); Peg.setBase('load');
-        back.push('Video result: ' + await Video.make(film[1], 5, () => stopped));
+        back.push('Video result: ' + await Video.make(film[1], 4, () => stopped));
       }
       turn.push({ role: 'user', content: back.join('\n\n') });
       steps++;

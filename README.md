@@ -8,8 +8,8 @@ Add a disc image to the repository root named `disc.iso` (or `disc.img`). It app
 
 ## Video maker
 
-The film button opens a video panel that sends your description to [Agnes Video Generator](https://github.com/lcy362/agnes-video-generator) by lcy362, running on your own computer. The panel lists the steps to connect it.
+The film button opens a video panel. It sends your description to the public [LTX-Video Space](https://huggingface.co/spaces/Lightricks/ltx-video-distilled) by Lightricks and plays the result. No key or sign-up is needed; free use is limited each day.
 
 ## Credits
 
-Inspired by Capri. On-device answers by [WebLLM](https://webllm.mlc.ai). Emulator by [v86](https://github.com/copy/v86). Videos by [Agnes Video Generator](https://github.com/lcy362/agnes-video-generator) (lcy362).
+Inspired by Capri. On-device answers by [WebLLM](https://webllm.mlc.ai). Emulator by [v86](https://github.com/copy/v86). Videos by [LTX-Video](https://huggingface.co/spaces/Lightricks/ltx-video-distilled) (Lightricks).

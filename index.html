@@ -177,8 +177,8 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .sheet{padding:20px;display:flex;flex-direction:column;gap:16px}
 .sheet h2{font:800 22px/1 var(--display);margin:0}
 .sheet h3{font:600 12px/1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0}
-.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface);padding:4px;border-radius:12px}
-.seg label{text-align:center;padding:8px;border-radius:9px;font-weight:500;font-size:14.5px;cursor:pointer}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);padding:4px;border-radius:12px}
+.seg label{text-align:center;padding:8px 4px;border-radius:9px;font-weight:500;font-size:14.5px;cursor:pointer}
 .seg input{position:absolute;opacity:0}
 .seg input:checked+label{background:var(--bg);box-shadow:0 0 0 1.5px var(--ink)}
 .seg input:focus-visible+label{outline:2px solid var(--f-red)}
@@ -210,6 +210,13 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .pad button{flex:1 0 auto;min-width:44px;height:40px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);font:600 13px var(--body);touch-action:none}
 .pad button:active{background:var(--f-yellow);color:#16140f;border-color:#16140f}
 .msg.bot code.act{background:var(--f-yellow);color:#16140f;font-weight:600}
+#picBtn{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center}
+#picBtn:hover{background:var(--surface)}
+#picBtn svg{width:21px;height:21px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#picBtn:disabled{opacity:.4;cursor:default}
+.msg.pic{padding:6px;display:flex;flex-direction:column;gap:6px}
+.msg.pic img{display:block;width:100%;max-width:384px;border-radius:13px}
+.msg.pic a,.msg.pic span{font-size:12.5px;color:var(--muted);padding:0 6px 2px}
 /* typing on his computer */
 #peg[data-s="type"] #pHead{transform:translateY(4px)}
 #peg[data-s="type"] #pArmL{animation:tyL .2s ease-in-out infinite alternate}
@@ -257,10 +264,11 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
   <main id="log" aria-live="polite">
     <section class="setup" id="setup">
       <h2>Hi, I'm Belgo. I live on your chat bar.</h2>
-      <p id="setupText">My brain runs on your own device with WebLLM, so nothing you write leaves it. The download happens once and is kept for next time.</p>
+      <p id="setupText">You chose the on-device brain. It runs with WebLLM, so nothing you write leaves this device. The download happens once and is kept for next time.</p>
       <div class="row">
         <button class="btn primary" id="wake">Download my brain</button>
-        <button class="btn" id="useKey">Use an API key instead</button>
+        <button class="btn" id="useFree">Use the free online brain</button>
+        <button class="btn" id="useKey">Use an API key</button>
       </div>
       <p class="hint" id="setupHint"></p>
     </section>
@@ -298,6 +306,9 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     </div>
     <form class="composer" id="form">
       <textarea id="input" rows="1" placeholder="Wake Belgo up first" aria-label="Message"></textarea>
+      <button id="picBtn" type="button" aria-label="Paint a picture from this text" title="Paint a picture from this text">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>
+      </button>
       <button id="send" type="submit" aria-label="Send" disabled>
         <svg viewBox="0 0 24 24" id="sendIcon"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
       </button>
@@ -310,8 +321,13 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
   <form class="sheet" method="dialog" id="settingsForm">
     <h2 id="setTitle">Belgo's brain</h2>
     <div class="seg">
-      <input type="radio" name="mode" id="modeLocal" value="local"><label for="modeLocal">On this device</label>
-      <input type="radio" name="mode" id="modeApi" value="api"><label for="modeApi">API key</label>
+      <input type="radio" name="mode" id="modeFree" value="free"><label for="modeFree">Free online</label>
+      <input type="radio" name="mode" id="modeLocal" value="local"><label for="modeLocal">On device</label>
+      <input type="radio" name="mode" id="modeApi" value="api"><label for="modeApi">API or local</label>
+    </div>
+
+    <div class="group" id="freeGroup">
+      <p class="hint">No key, no sign-up and no download. Belgo answers through the free Pollinations text service, so your messages are sent to it. It allows roughly one answer every 30 seconds; Belgo waits and retries when it is busy.</p>
     </div>
 
     <div class="group" id="localGroup">
@@ -320,11 +336,12 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     </div>
 
     <div class="group" id="apiGroup">
+      <div class="row"><button class="btn sm" type="button" id="presetLm">LM Studio on this computer</button></div>
       <label class="field"><span>API address</span><input id="apiBase" type="url" inputmode="url" placeholder="https://api.openai.com/v1" autocomplete="off"></label>
       <label class="field"><span>Model name</span><input id="apiModel" type="text" placeholder="e.g. gpt-4o-mini" autocomplete="off" autocapitalize="off"></label>
       <label class="field"><span>API key</span><input id="apiKey" type="password" placeholder="sk-…" autocomplete="off"></label>
       <label class="check"><input type="checkbox" id="remember"> Remember the key in this browser</label>
-      <p class="hint">Works with any OpenAI-compatible service. Your key goes straight from this page to that address and nowhere else. Unless you tick the box, it is forgotten when you close the tab.</p>
+      <p class="hint">For LM Studio, start its local server, turn on CORS in the server settings, and enter the model name it shows. No key is needed. Works with any OpenAI-compatible service. Your key goes straight from this page to that address and nowhere else. Unless you tick the box, it is forgotten when you close the tab.</p>
     </div>
 
     <div class="row">
@@ -338,6 +355,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
       <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
       <p>On-device answers run on <a href="https://webllm.mlc.ai" target="_blank" rel="noopener">WebLLM</a> by the MLC AI team.</p>
       <p>His computer is <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a>, the x86 emulator by Fabian Hemmer and contributors.</p>
+      <p>The free online brain and the pictures come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>.</p>
     </div>
   </form>
 </dialog>
@@ -354,7 +372,7 @@ const MODELS = [
   { id: 'Qwen2.5-1.5B-Instruct', label: 'Qwen 2.5 1.5B', note: 'about 1.6 GB' },
   { id: 'Phi-3.5-mini-instruct', label: 'Phi 3.5 mini', note: 'about 3.7 GB, needs a strong device' },
 ];
-const cfg = { mode: 'local', model: 'Llama-3.2-1B-Instruct', base: 'https://api.openai.com/v1', apiModel: '', key: '', remember: false };
+const cfg = { mode: 'free', model: 'Llama-3.2-1B-Instruct', base: 'https://api.openai.com/v1', apiModel: '', key: '', remember: false };
 try { Object.assign(cfg, JSON.parse(localStorage.getItem(LS) || '{}')); } catch {}
 function saveCfg() {
   try {
@@ -423,7 +441,7 @@ const Peg = (() => {
 /* ---------------- chat state and rendering ---------------- */
 const SYSTEM = 'You are Belgo, a small cheerful figure painted in the black, yellow and red of the Belgian flag. You live on top of the chat bar. Be friendly, clear and concise. Reply in the language the user writes in.';
 const log = $('#log'), input = $('#input'), sendBtn = $('#send');
-let history = [], busy = false, loading = false, engine = null, engineId = '', aborter = null, stopLocal = false, stopped = false;
+let history = [], busy = false, loading = false, engine = null, engineId = '', aborter = null, stopLocal = false, stopped = false, painting = false;
 
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function inline(s) {
@@ -444,17 +462,18 @@ function add(cls, text) {
 }
 const note = (t, err) => add('note' + (err ? ' err' : ''), t);
 
-function isReady() { return cfg.mode === 'api' ? !!(cfg.base && cfg.apiModel) : !!engine; }
+function isReady() { return cfg.mode === 'free' || (cfg.mode === 'api' ? !!(cfg.base && cfg.apiModel) : !!engine); }
 function setStatus(kind, text) { $('#status').dataset.k = kind; $('#statusText').textContent = text; }
 function refresh() {
   const ready = isReady();
   $('#setup').hidden = ready || loading || history.length > 0;
   if (!loading && !busy) {
-    if (ready) setStatus('ready', cfg.mode === 'api' ? 'API · ' + cfg.apiModel : 'On device · ' + modelInfo().label);
+    if (ready) setStatus('ready', cfg.mode === 'free' ? 'Free online' : cfg.mode === 'api' ? 'API · ' + cfg.apiModel : 'On device · ' + modelInfo().label);
     else setStatus('idle', 'Asleep');
   }
   input.placeholder = ready ? 'Message Belgo' : (loading ? 'Belgo is loading…' : 'Wake Belgo up first');
   sendBtn.disabled = !busy && (!ready || !input.value.trim());
+  $('#picBtn').disabled = busy || painting || !input.value.trim();
   if (busy) { sendBtn.dataset.stop = ''; sendBtn.setAttribute('aria-label', 'Stop'); $('#sendIcon').innerHTML = '<rect x="7" y="7" width="10" height="10" rx="2"/>'; }
   else { delete sendBtn.dataset.stop; sendBtn.setAttribute('aria-label', 'Send'); $('#sendIcon').innerHTML = '<path d="M12 19V5M6 11l6-6 6 6"/>'; }
   $('#wake').textContent = 'Download my brain (' + modelInfo().note.split(',')[0] + ')';
@@ -504,7 +523,7 @@ const PC = (() => {
       'To run a DOS command, type it and then press enter. Use only a few commands per reply. After your commands you will be shown the screen again. When you are finished, answer the user without any commands.\n\n' + report();
   }
   function parse(out) {
-    const acts = [], re = /\[\[\s*(type|key|hold|wait)\s*:\s*([^\]]*)\]\]/gi;
+    const acts = [], re = /\[\[\s*(type|key|hold|wait|image)\s*:\s*([^\]]*)\]\]/gi;
     let m; while ((m = re.exec(out)) && acts.length < 8) acts.push([m[1].toLowerCase(), m[2]]);
     return acts;
   }
@@ -639,17 +658,28 @@ async function* localStream(messages) {
     if (t) yield t;
   }
 }
-async function* apiStream(messages) {
+async function* httpStream(url, model, key, messages, patient) {
   aborter = new AbortController();
   const headers = { 'Content-Type': 'application/json' };
-  if (cfg.key) headers.Authorization = 'Bearer ' + cfg.key;
-  const res = await fetch(cfg.base.replace(/\/+$/, '') + '/chat/completions', {
-    method: 'POST', headers, signal: aborter.signal,
-    body: JSON.stringify({ model: cfg.apiModel, messages, stream: true })
-  });
+  if (key) headers.Authorization = 'Bearer ' + key;
+  let res;
+  for (let attempt = 0; ; attempt++) {
+    res = await fetch(url, { method: 'POST', headers, signal: aborter.signal, body: JSON.stringify({ model, messages, stream: true }) });
+    if (!(patient && (res.status === 402 || res.status === 429) && attempt < 3)) break;
+    const wait = clamp(+res.headers.get('retry-after') || 30, 5, 60);
+    for (let left = wait; left > 0; left--) {
+      if (stopped) throw new DOMException('Stopped', 'AbortError');
+      setStatus('busy', 'Free service busy, retrying in ' + left + 's'); await sleep(1000);
+    }
+    setStatus('busy', 'Thinking');
+  }
   if (!res.ok) {
-    let detail = ''; try { const j = await res.json(); detail = j.error?.message || ''; } catch {}
+    let detail = ''; try { const j = await res.json(); detail = j.error?.message || (typeof j.error === 'string' ? j.error : ''); } catch {}
+    if (patient && (res.status === 402 || res.status === 429)) throw new Error('The free service is too busy right now. Wait a minute, or switch brain in settings.');
     throw new Error('The service answered ' + res.status + (detail ? ': ' + detail : '') + '.');
+  }
+  if (/json/i.test(res.headers.get('content-type') || '')) {
+    const j = await res.json(); const t = j.choices?.[0]?.message?.content; if (t) yield t; return;
   }
   const reader = res.body.getReader(), dec = new TextDecoder();
   let buf = '';
@@ -659,18 +689,59 @@ async function* apiStream(messages) {
     buf += dec.decode(value, { stream: true });
     const lines = buf.split('\n'); buf = lines.pop();
     for (const line of lines) {
-      const s = line.trim();
-      if (!s.startsWith('data:')) continue;
-      const data = s.slice(5).trim();
+      const t0 = line.trim();
+      if (!t0.startsWith('data:')) continue;
+      const data = t0.slice(5).trim();
       if (data === '[DONE]') return;
       try { const t = JSON.parse(data).choices?.[0]?.delta?.content; if (t) yield t; } catch {}
     }
   }
 }
+const FREE_URL = 'https://text.pollinations.ai/openai';
+const brainStream = messages => cfg.mode === 'free' ? httpStream(FREE_URL, 'openai-fast', '', messages, true)
+  : cfg.mode === 'api' ? httpStream(cfg.base.replace(/\/+$/, '') + '/chat/completions', cfg.apiModel, cfg.key, messages, false)
+  : localStream(messages);
+
+/* ---------------- pictures (Pollinations, no key) ---------------- */
+const Pic = {
+  prompt: '\n\nYou can paint a picture. Write [[image: a clear description of the picture in English]] on its own line. Do this only when the user asks for a picture, image or drawing.',
+  make(text) {
+    return new Promise(done => {
+      text = String(text || '').trim();
+      if (!text) return done('No description was given.');
+      const box = add('msg bot pic', ''), label = document.createElement('span');
+      box.append(label);
+      const t0 = Date.now(), tick = setInterval(() => { label.textContent = 'Painting… ' + Math.round((Date.now() - t0) / 1000) + 's'; }, 1000);
+      label.textContent = 'Painting…';
+      const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(text) + '?width=768&height=768&nologo=true&seed=' + Math.floor(Math.random() * 1e9);
+      const im = new Image(); im.alt = text;
+      im.onload = () => {
+        clearInterval(tick); box.textContent = '';
+        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open full size';
+        box.append(im, a); log.scrollTop = log.scrollHeight;
+        done('The picture is finished and is showing in the chat.');
+      };
+      im.onerror = () => {
+        clearInterval(tick); box.remove();
+        const m = 'The free picture service is busy. It allows about one picture every 45 seconds. Try again shortly.';
+        note(m, true); done('The picture failed: ' + m);
+      };
+      im.src = url;
+    });
+  }
+};
+async function paint(text) {
+  painting = true; refresh();
+  if (!busy) Peg.setBase('think');
+  const res = await Pic.make(text);
+  painting = false;
+  if (!busy) { Peg.setBase('idle'); refresh(); /finished/.test(res) ? Peg.hello() : Peg.flash('shrug', 1400); }
+  return res;
+}
 
 async function streamOne(messages) {
   let out = '', bubble = null;
-  const gen = cfg.mode === 'api' ? apiStream(messages) : localStream(messages);
+  const gen = brainStream(messages);
   for await (const t of gen) {
     if (!bubble) { bubble = add('msg bot', ''); Peg.setBase('talk'); setStatus('busy', 'Answering'); }
     out += t;
@@ -691,9 +762,11 @@ async function send() {
   try {
     for (;;) {
       setStatus('busy', 'Thinking'); Peg.setBase('think');
-      const messages = [{ role: 'system', content: SYSTEM + PC.prompt() }, ...history.slice(-10), ...turn.slice(-4)];
+      const messages = [{ role: 'system', content: SYSTEM + PC.prompt() + Pic.prompt }, ...history.slice(-10), ...turn.slice(-4)];
       out = await streamOne(messages);
-      const acts = PC.on() ? PC.parse(out) : [];
+      const all = PC.parse(out), pic = all.find(a => a[0] === 'image');
+      const acts = PC.on() ? all.filter(a => a[0] !== 'image') : [];
+      if (pic && !stopped) { setStatus('busy', 'Painting'); Peg.setBase('think'); await paint(pic[1]); }
       if (!out || !acts.length || stopped || steps >= 6) break;
       turn.push({ role: 'assistant', content: out });
       setStatus('busy', 'Using his computer'); Peg.setBase('type');
@@ -706,6 +779,7 @@ async function send() {
   } catch (e) {
     if (e?.name !== 'AbortError') {
       const hint = cfg.mode === 'api' ? ' Check the address, model name and key in settings.' : '';
+      if (e instanceof TypeError) e = new Error('Belgo could not reach the service. Check your connection' + (cfg.mode === 'api' ? ' and that the address allows this page (CORS)' : '') + '.');
       note('That did not work: ' + (e?.message || e) + hint, true);
       setTimeout(() => Peg.flash('shrug', 1400), 0);
     }
@@ -714,7 +788,7 @@ async function send() {
 }
 function stop() {
   stopped = true;
-  if (cfg.mode === 'api') aborter?.abort();
+  if (cfg.mode !== 'local') aborter?.abort();
   else { stopLocal = true; try { engine?.interruptGenerate(); } catch {} }
 }
 
@@ -730,15 +804,24 @@ input.addEventListener('keydown', e => {
 });
 $('#form').addEventListener('submit', e => { e.preventDefault(); busy ? stop() : send(); });
 $('#wake').addEventListener('click', loadLocal);
+$('#picBtn').addEventListener('click', () => {
+  const text = input.value.trim();
+  if (!text || busy || painting) return;
+  input.value = ''; grow(); add('msg user', text); paint(text);
+});
+$('#useFree').addEventListener('click', () => {
+  cfg.mode = 'free'; saveCfg(); refresh();
+  note('Belgo now uses the free online brain. Your messages are sent to Pollinations.'); Peg.hello();
+});
 
 /* ---------------- settings sheet ---------------- */
 const dlg = $('#settings');
 $('#model').innerHTML = MODELS.map(m => `<option value="${m.id}">${m.label} (${m.note})</option>`).join('');
 function showGroups() {
-  const api = $('#modeApi').checked;
-  $('#apiGroup').hidden = !api; $('#localGroup').hidden = api;
+  $('#apiGroup').hidden = !$('#modeApi').checked; $('#localGroup').hidden = !$('#modeLocal').checked; $('#freeGroup').hidden = !$('#modeFree').checked;
 }
 function openSettings(mode) {
+  $('#modeFree').checked = (mode || cfg.mode) === 'free';
   $('#modeLocal').checked = (mode || cfg.mode) === 'local';
   $('#modeApi').checked = (mode || cfg.mode) === 'api';
   $('#model').value = cfg.model; $('#apiBase').value = cfg.base; $('#apiModel').value = cfg.apiModel;
@@ -746,6 +829,8 @@ function openSettings(mode) {
   showGroups(); dlg.showModal();
 }
 $('#modeLocal').addEventListener('change', showGroups);
+$('#modeFree').addEventListener('change', showGroups);
+$('#presetLm').addEventListener('click', () => { $('#apiBase').value = 'http://localhost:1234/v1'; $('#apiKey').value = ''; $('#apiModel').focus(); });
 $('#modeApi').addEventListener('change', showGroups);
 $('#openSettings').addEventListener('click', () => openSettings());
 $('#useKey').addEventListener('click', () => openSettings('api'));
@@ -753,7 +838,7 @@ dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close('cancel'); 
 dlg.addEventListener('close', () => {
   if (dlg.returnValue !== 'save') return;
   const before = cfg.mode + cfg.model;
-  cfg.mode = $('#modeApi').checked ? 'api' : 'local';
+  cfg.mode = $('#modeApi').checked ? 'api' : $('#modeLocal').checked ? 'local' : 'free';
   cfg.model = $('#model').value;
   cfg.base = $('#apiBase').value.trim() || 'https://api.openai.com/v1';
   cfg.apiModel = $('#apiModel').value.trim();
@@ -765,6 +850,8 @@ dlg.addEventListener('close', () => {
   if (cfg.mode === 'api') {
     if (!cfg.apiModel) note('Add a model name in settings so Belgo knows which one to ask.', true);
     else if (before !== cfg.mode + cfg.model) { note('Belgo now answers through ' + cfg.apiModel + '. Your messages are sent to ' + new URL(cfg.base).host + '.'); Peg.hello(); }
+  } else if (cfg.mode === 'free') {
+    if (before !== cfg.mode + cfg.model) { note('Belgo now uses the free online brain. Your messages are sent to Pollinations.'); Peg.hello(); }
   } else if (!engine && history.length) note('Belgo needs to download ' + modelInfo().label + ' before answering.'), $('#setup').hidden = false;
 });
 $('#clearChat').addEventListener('click', () => {
@@ -774,6 +861,7 @@ $('#clearChat').addEventListener('click', () => {
 });
 
 refresh();
+if (cfg.mode === 'free') note('Belgo is awake on the free online brain, so your messages are sent to Pollinations. Change his brain in settings.');
 </script>
 </body>
 </html>

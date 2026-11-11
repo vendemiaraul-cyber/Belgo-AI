@@ -334,7 +334,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
       <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
       <p>On-device answers run on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> by Xuan Son Nguyen, built on llama.cpp.</p>
       <p>His computer is <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a>, the x86 emulator by Fabian Hemmer and contributors.</p>
-      <p>The pictures come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>.</p>
+      <p>Pictures are painted by <a href="https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo" target="_blank" rel="noopener">Z-Image-Turbo</a> (Tongyi-MAI) and <a href="https://huggingface.co/spaces/black-forest-labs/FLUX.2-klein-4B" target="_blank" rel="noopener">FLUX.2 klein</a> (Black Forest Labs) on their public Hugging Face Spaces, with <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a> as a backup.</p>
     </div>
   </form>
 </dialog>
@@ -700,32 +700,80 @@ async function* localStream(messages) {
     throw e;
   }
 }
-/* ---------------- pictures (Pollinations, no key) ---------------- */
+/* ---------------- pictures (no key) ----------------
+   Tried in order: Z-Image-Turbo, then FLUX.2 klein, both on public Hugging Face Spaces; Pollinations is the last resort. */
+async function gradio(base, endpoint, data, ms = 150000) {
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
+  try {
+    const url = base + '/gradio_api/call/' + endpoint;
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data }), signal: ctl.signal });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.event_id) throw new Error(j.detail || j.error || 'answered ' + r.status);
+    const res = await fetch(url + '/' + j.event_id, { signal: ctl.signal });
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = '', event = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (line.startsWith('event:')) event = line.slice(6).trim();
+        else if (line.startsWith('data:')) {
+          let d = null; try { d = JSON.parse(line.slice(5)); } catch {}
+          if (event === 'complete') return d;
+          if (event === 'error') throw new Error((typeof d === 'string' ? d : d?.error || d?.message) || 'busy or over its free limit');
+        }
+      }
+    }
+    throw new Error('ended without a picture');
+  } finally { clearTimeout(timer); }
+}
+const fileUrl = (base, f) => f?.url || (f?.path ? base + '/gradio_api/file=' + f.path : '');
+const PAINTERS = [
+  { name: 'Z-Image-Turbo', async run(text) {
+      const base = 'https://tongyi-mai-z-image-turbo.hf.space';
+      const out = await gradio(base, 'generate', [text, '1024x1024 ( 1:1 )', 42, 8, 3, true, []]);
+      const first = out?.[0]?.[0]; return fileUrl(base, first?.image || first);
+    } },
+  { name: 'FLUX.2 klein', async run(text) {
+      const base = 'https://black-forest-labs-flux-2-klein-4b.hf.space';
+      const out = await gradio(base, 'infer', [text, [], 'Distilled (4 steps)', 0, true, 1024, 1024, 4, 1, false]);
+      return fileUrl(base, out?.[0]);
+    } },
+  { name: 'Pollinations', async run(text) {
+      return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(text) + '?width=768&height=768&nologo=true&seed=' + Math.floor(Math.random() * 1e9);
+    } },
+];
+const showImg = (im, url) => new Promise((ok, no) => { im.onload = ok; im.onerror = () => no(new Error('the picture did not load')); im.src = url; });
 const Pic = {
   prompt: '\n\nYou can paint a picture. Write [[image: a clear description of the picture in English]] on its own line. Do this only when the user asks for a picture, image or drawing.',
-  make(text) {
-    return new Promise(done => {
-      text = String(text || '').trim();
-      if (!text) return done('No description was given.');
-      const box = add('msg bot pic', ''), label = document.createElement('span');
-      box.append(label);
-      const t0 = Date.now(), tick = setInterval(() => { label.textContent = 'Painting… ' + Math.round((Date.now() - t0) / 1000) + 's'; }, 1000);
-      label.textContent = 'Painting…';
-      const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(text) + '?width=768&height=768&nologo=true&seed=' + Math.floor(Math.random() * 1e9);
-      const im = new Image(); im.alt = text;
-      im.onload = () => {
-        clearInterval(tick); box.textContent = '';
-        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open full size';
-        box.append(im, a); log.scrollTop = log.scrollHeight;
-        done('The picture is finished and is showing in the chat.');
-      };
-      im.onerror = () => {
-        clearInterval(tick); box.remove();
-        const m = 'The free picture service is busy. It allows about one picture every 45 seconds. Try again shortly.';
-        note(m, true); done('The picture failed: ' + m);
-      };
-      im.src = url;
-    });
+  async make(text) {
+    text = String(text || '').trim();
+    if (!text) return 'No description was given.';
+    const box = add('msg bot pic', ''), label = document.createElement('span');
+    box.append(label);
+    const t0 = Date.now(); let who = PAINTERS[0].name;
+    const tick = setInterval(() => { label.textContent = 'Painting with ' + who + '… ' + Math.round((Date.now() - t0) / 1000) + 's'; }, 1000);
+    label.textContent = 'Painting…';
+    try {
+      for (const painter of PAINTERS) {
+        who = painter.name;
+        try {
+          const url = await painter.run(text);
+          if (!url) throw new Error('no picture came back');
+          const im = new Image(); im.alt = text;
+          await showImg(im, url);
+          box.textContent = '';
+          const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Made with ' + painter.name + ' · Open full size';
+          box.append(im, a); log.scrollTop = log.scrollHeight;
+          return 'The picture is finished and is showing in the chat.';
+        } catch {}
+      }
+      box.remove();
+      const m = 'All three free picture services are busy or over their free limit right now. Try again in a minute.';
+      note(m, true); return 'The picture failed: ' + m;
+    } finally { clearInterval(tick); }
   }
 };
 async function paint(text) {

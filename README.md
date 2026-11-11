@@ -12,4 +12,4 @@ The `_headers` file turns on cross-origin isolation on Cloudflare Pages, which l
 
 ## Credits
 
-Inspired by Capri. On-device answers by [wllama](https://github.com/ngxson/wllama). Emulator by [v86](https://github.com/copy/v86). Pictures by [Pollinations](https://pollinations.ai).
+Inspired by Capri. On-device answers by [wllama](https://github.com/ngxson/wllama). Emulator by [v86](https://github.com/copy/v86). Pictures by [Z-Image-Turbo](https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo) and [FLUX.2 klein](https://huggingface.co/spaces/black-forest-labs/FLUX.2-klein-4B) on public Hugging Face Spaces, with [Pollinations](https://pollinations.ai) as a backup.

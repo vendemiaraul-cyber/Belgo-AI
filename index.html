@@ -346,7 +346,7 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 /* ---------------- settings ---------------- */
 const LS = 'belgo.settings.v2';
 const MODELS = [
-  { id: 'smol360', label: 'SmolLM2 360M', note: '0.4 GB, fastest, English only', repo: 'HuggingFaceTB/SmolLM2-360M-Instruct-GGUF', file: 'smollm2-360m-instruct-q8_0.gguf' },
+  { id: 'smol360', label: 'SmolLM2 360M', note: '0.3 GB, lightest, English only', repo: 'bartowski/SmolLM2-360M-Instruct-GGUF', file: 'SmolLM2-360M-Instruct-Q4_K_M.gguf' },
   { id: 'qwen05', label: 'Qwen 2.5 0.5B', note: '0.5 GB, light', repo: 'Qwen/Qwen2.5-0.5B-Instruct-GGUF', file: 'qwen2.5-0.5b-instruct-q4_k_m.gguf' },
   { id: 'llama1', label: 'Llama 3.2 1B', note: '0.8 GB, balanced', repo: 'bartowski/Llama-3.2-1B-Instruct-GGUF', file: 'Llama-3.2-1B-Instruct-Q4_K_M.gguf' },
   { id: 'qwen15', label: 'Qwen 2.5 1.5B', note: '1.1 GB, smartest, slow on phones', repo: 'Qwen/Qwen2.5-1.5B-Instruct-GGUF', file: 'qwen2.5-1.5b-instruct-q4_k_m.gguf' },
@@ -612,21 +612,54 @@ async function loadLocal() {
     try { await navigator.storage?.persist?.(); } catch {}
     const { Wllama } = await getWllama();
     if (engine) { try { await engine.exit(); } catch {} engine = null; }
-    /* Try the chosen model, then each smaller one, so a model that is too big for this device does not leave Belgo asleep. */
+    /* One attempt: download, then start the model inside the worker. Starting gives no progress of its own,
+       so Belgo counts the seconds, listens for worker errors, and gives up after a limit instead of hanging at 100%. */
+    const attempt = async (m, single) => {
+      let fail, timer, phase = 'download', t0 = 0, lastTick = Date.now();
+      const failed = new Promise((_, no) => { fail = no; });
+      const logger = { debug() {}, log() {}, warn() {},
+        error: (...a) => {
+          const t = a.map(x => x?.message || (typeof x === 'string' ? x : '')).join(' ');
+          if (a.some(x => x instanceof ErrorEvent || x instanceof Error) || /out of memory|abort\(|unreachable|RangeError/i.test(t)) fail(new Error(t || 'The brain stopped while starting.'));
+        } };
+      const w = new Wllama({ default: WL + 'wasm/wllama.wasm' }, { logger });
+      const watchdog = new Promise((_, no) => {
+        timer = setInterval(() => {
+          if (phase === 'download' && Date.now() - lastTick > 20000 && t0) phase = 'start';
+          if (phase !== 'start') return;
+          const sec = Math.round((Date.now() - t0) / 1000);
+          setStatus('busy', 'Starting brain ' + sec + 's'); $('#liftText').textContent = sec + 's';
+          if (sec > 120) no(new Error('Starting ' + m.label + ' took too long on this device.'));
+        }, 1000);
+      });
+      const load = w.loadModelFromHF({ repo: m.repo, file: m.file }, {
+        n_ctx: 2048, n_batch: 256, n_parallel: 1, n_gpu_layers: 0, ...(single ? { n_threads: 1 } : {}),
+        progressCallback: ({ loaded, total }) => {
+          lastTick = Date.now();
+          const p = total ? loaded / total : 0;
+          if (p >= 0.999) { if (phase !== 'start') { phase = 'start'; t0 = Date.now(); } return; }
+          Peg.progress(p); setStatus('busy', 'Downloading ' + Math.round(p * 100) + '%');
+        }
+      });
+      load.catch(() => {});
+      try { await Promise.race([load, failed, watchdog]); return w; }
+      catch (e) { try { await w.exit(); } catch {} throw e; }
+      finally { clearInterval(timer); }
+    };
+    /* Try the chosen model, then on one processor core, then each smaller model. */
     const at = Math.max(0, MODELS.findIndex(m => m.id === cfg.model));
+    const plan = [];
+    MODELS.slice(0, at + 1).reverse().forEach((m, i) => {
+      if (i === 0 && self.crossOriginIsolated) plan.push([m, false]);
+      plan.push([m, true]);
+    });
     let lastErr = null;
-    for (const m of MODELS.slice(0, at + 1).reverse()) {
-      if (m.id !== cfg.model) note(modelInfo().label + ' did not load here, so Belgo is trying ' + m.label + '.');
-      const w = new Wllama({ default: WL + 'wasm/wllama.wasm' });
-      try {
-        Peg.progress(0);
-        await w.loadModelFromHF({ repo: m.repo, file: m.file }, {
-          n_ctx: 4096, n_gpu_layers: 0,
-          progressCallback: ({ loaded, total }) => { const p = total ? loaded / total : 0; Peg.progress(p); setStatus('busy', 'Loading ' + Math.round(p * 100) + '%'); }
-        });
-        engine = w; engineId = m.id; lastErr = null; break;
-      } catch (e) {
-        lastErr = e; try { await w.exit(); } catch {}
+    for (let i = 0; i < plan.length; i++) {
+      const [m, single] = plan[i];
+      if (i > 0) note(plan[i - 1][0] === m ? m.label + ' did not start, so Belgo is trying again more carefully.' : plan[i - 1][0].label + ' did not start here, so Belgo is trying ' + m.label + '.');
+      try { Peg.progress(0); engine = await attempt(m, single); engineId = m.id; lastErr = null; break; }
+      catch (e) {
+        lastErr = e;
         if (e instanceof TypeError || /fetch|network|quota/i.test(e?.message || '')) break;
       }
     }

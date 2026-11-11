@@ -177,7 +177,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .sheet{padding:20px;display:flex;flex-direction:column;gap:16px}
 .sheet h2{font:800 22px/1 var(--display);margin:0}
 .sheet h3{font:600 12px/1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0}
-.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface);padding:4px;border-radius:12px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);padding:4px;border-radius:12px}
 .seg label{text-align:center;padding:8px 4px;border-radius:9px;font-weight:500;font-size:14.5px;cursor:pointer}
 .seg input{position:absolute;opacity:0}
 .seg input:checked+label{background:var(--bg);box-shadow:0 0 0 1.5px var(--ink)}
@@ -214,9 +214,10 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
   <main id="log" aria-live="polite">
     <section class="setup" id="setup">
       <h2>Hi, I'm Belgo. I live on your chat bar.</h2>
-      <p id="setupText">I need a brain first. GitHub Models answers fast with a free GitHub token. The on-device brain needs no account but has to download and start on this device.</p>
+      <p id="setupText">The brain you picked is not ready yet. The free online brain works straight away with no key and no download.</p>
       <div class="row">
-        <button class="btn primary" id="useGh">Connect GitHub Models</button>
+        <button class="btn primary" id="useFree">Use the free online brain</button>
+        <button class="btn" id="useGh">Connect GitHub Models</button>
         <button class="btn" id="wake">Download my brain</button>
       </div>
       <p class="hint" id="setupHint"></p>
@@ -262,7 +263,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
         <svg viewBox="0 0 24 24" id="sendIcon"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
       </button>
     </form>
-    <p class="credits">Inspired by Capri · Runs on <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a> or <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a></p>
+    <p class="credits">Inspired by Capri · Free brain by <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a></p>
   </div>
 </div>
 
@@ -270,8 +271,13 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
   <form class="sheet" method="dialog" id="settingsForm">
     <h2 id="setTitle">Belgo's brain</h2>
     <div class="seg">
-      <input type="radio" name="mode" id="modeGh" value="github"><label for="modeGh">GitHub Models</label>
+      <input type="radio" name="mode" id="modeFree" value="free"><label for="modeFree">Free online</label>
+      <input type="radio" name="mode" id="modeGh" value="github"><label for="modeGh">GitHub</label>
       <input type="radio" name="mode" id="modeLocal" value="local"><label for="modeLocal">On device</label>
+    </div>
+
+    <div class="group" id="freeGroup">
+      <p class="hint">Works straight away: no key, no account, no download. Belgo answers through the free Pollinations text service, so your messages are sent to it. When it is busy he waits a few seconds and tries again by himself.</p>
     </div>
 
     <div class="group" id="ghGroup">
@@ -296,7 +302,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     <div class="credits-box">
       <h3>Credits</h3>
       <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
-      <p>Online answers come from <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>.</p>
+      <p>Free online answers come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>; the GitHub option uses <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>.</p>
       <p>On-device answers run on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> by Xuan Son Nguyen, built on llama.cpp.</p>
       <p>Pictures are painted by <a href="https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo" target="_blank" rel="noopener">Z-Image-Turbo</a> (Tongyi-MAI) and <a href="https://huggingface.co/spaces/black-forest-labs/FLUX.2-klein-4B" target="_blank" rel="noopener">FLUX.2 klein</a> (Black Forest Labs) on their public Hugging Face Spaces.</p>
     </div>
@@ -308,7 +314,7 @@ const $ = s => document.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 /* ---------------- settings ---------------- */
-const LS = 'belgo.settings.v2';
+const LS = 'belgo.settings.v3';
 const MODELS = [
   { id: 'smol360', label: 'SmolLM2 360M', note: '0.3 GB, lightest, English only', repo: 'bartowski/SmolLM2-360M-Instruct-GGUF', file: 'SmolLM2-360M-Instruct-Q4_K_M.gguf' },
   { id: 'qwen05', label: 'Qwen 2.5 0.5B', note: '0.5 GB, light', repo: 'Qwen/Qwen2.5-0.5B-Instruct-GGUF', file: 'qwen2.5-0.5b-instruct-q4_k_m.gguf' },
@@ -316,11 +322,11 @@ const MODELS = [
   { id: 'qwen15', label: 'Qwen 2.5 1.5B', note: '1.1 GB, smartest, slow on phones', repo: 'Qwen/Qwen2.5-1.5B-Instruct-GGUF', file: 'qwen2.5-1.5b-instruct-q4_k_m.gguf' },
 ];
 const onPhone = matchMedia('(pointer:coarse)').matches;
-const cfg = { mode: 'github', ghModel: 'openai/gpt-4.1-mini', token: '', remember: false, model: onPhone ? 'qwen05' : 'llama1' };
+const cfg = { mode: 'free', ghModel: 'openai/gpt-4.1-mini', token: '', remember: false, model: onPhone ? 'qwen05' : 'llama1' };
 try {
   const saved = JSON.parse(localStorage.getItem(LS) || '{}');
   if (MODELS.some(m => m.id === saved.model)) cfg.model = saved.model;
-  if (saved.mode === 'local' || saved.mode === 'github') cfg.mode = saved.mode;
+  if (['free', 'local', 'github'].includes(saved.mode)) cfg.mode = saved.mode;
   if (saved.ghModel) cfg.ghModel = saved.ghModel;
   if (saved.remember && saved.token) { cfg.token = saved.token; cfg.remember = true; }
 } catch {}
@@ -409,13 +415,14 @@ function add(cls, text) {
 const note = (t, err) => add('note' + (err ? ' err' : ''), t);
 
 const onGh = () => cfg.mode === 'github';
-function isReady() { return onGh() ? !!cfg.token : !!engine; }
+const onFree = () => cfg.mode === 'free';
+function isReady() { return onFree() || (onGh() ? !!cfg.token : !!engine); }
 function setStatus(kind, text) { $('#status').dataset.k = kind; $('#statusText').textContent = text; }
 function refresh() {
   const ready = isReady();
   $('#setup').hidden = ready || loading || history.length > 0;
   if (!loading && !busy) {
-    if (ready) setStatus('ready', onGh() ? 'GitHub · ' + cfg.ghModel.split('/').pop() : 'On device · ' + ((MODELS.find(m => m.id === engineId) || modelInfo()).label));
+    if (ready) setStatus('ready', onFree() ? 'Free online' : onGh() ? 'GitHub · ' + cfg.ghModel.split('/').pop() : 'On device · ' + ((MODELS.find(m => m.id === engineId) || modelInfo()).label));
     else setStatus('idle', 'Asleep');
   }
   input.placeholder = ready ? 'Message Belgo' : (loading ? 'Belgo is loading…' : 'Wake Belgo up first');
@@ -537,6 +544,46 @@ async function* localStream(messages) {
     }
     throw e;
   }
+}
+/* Free online brain: no key. Tries the chat endpoint first, then the plain link form, and waits when the service asks to. */
+async function freeOnce(messages, signal) {
+  const post = () => fetch('https://text.pollinations.ai/openai', {
+    method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'openai-fast', messages })
+  });
+  const get = () => {
+    const sys = messages.find(m => m.role === 'system')?.content || '';
+    const talk = messages.filter(m => m.role !== 'system').slice(-6).map(m => (m.role === 'user' ? 'User: ' : 'Belgo: ') + m.content).join('\n').slice(-1800);
+    return fetch('https://text.pollinations.ai/' + encodeURIComponent(talk + '\nBelgo:') + '?model=openai-fast&system=' + encodeURIComponent(sys.slice(0, 600)), { signal });
+  };
+  let res, viaGet = false;
+  try { res = await post(); } catch (e) { if (e?.name === 'AbortError') throw e; res = null; }
+  if (!res || (!res.ok && res.status !== 402 && res.status !== 429)) { viaGet = true; res = await get(); }
+  if (res.status === 402 || res.status === 429) return { wait: clamp(+res.headers.get('retry-after') || 20, 5, 45) };
+  if (!res.ok) throw new Error('The free service answered ' + res.status + '.');
+  if (viaGet) return { text: (await res.text()).trim() };
+  const raw = await res.text();
+  try { const j = JSON.parse(raw); return { text: (j.choices?.[0]?.message?.content || '').trim() }; } catch { return { text: raw.trim() }; }
+}
+async function* freeStream(messages) {
+  aborter = new AbortController();
+  for (let attempt = 0; attempt < 4; attempt++) {
+    let r;
+    try { r = await freeOnce(messages, aborter.signal); }
+    catch (e) {
+      if (e?.name === 'AbortError') throw e;
+      if (e instanceof TypeError) throw new Error('Belgo could not reach the free online brain. Check your connection and try again.');
+      throw e;
+    }
+    if (r.text) { yield r.text; return; }
+    if (!r.wait) return;
+    for (let left = r.wait; left > 0; left--) {
+      if (stopped) throw new DOMException('Stopped', 'AbortError');
+      setStatus('busy', 'Busy, trying again in ' + left + 's'); await sleep(1000);
+    }
+    setStatus('busy', 'Thinking');
+  }
+  throw new Error('The free online brain is too busy right now. Wait a minute and ask again.');
 }
 async function* githubStream(messages) {
   aborter = new AbortController();
@@ -662,7 +709,7 @@ async function paint(text) {
 
 async function streamOne(messages) {
   let out = '', bubble = null;
-  const gen = onGh() ? githubStream(messages) : localStream(messages);
+  const gen = onFree() ? freeStream(messages) : onGh() ? githubStream(messages) : localStream(messages);
   for await (const t of gen) {
     if (!bubble) { bubble = add('msg bot', ''); Peg.setBase('talk'); setStatus('busy', 'Answering'); }
     out += t;
@@ -682,7 +729,7 @@ async function send() {
   let out = '';
   try {
     setStatus('busy', 'Thinking'); Peg.setBase('think');
-    out = await streamOne([{ role: 'system', content: SYSTEM + Pic.prompt }, ...history.slice(onGh() ? -16 : -6)]);
+    out = await streamOne([{ role: 'system', content: SYSTEM + Pic.prompt }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
     const pic = /\[\[\s*image\s*:\s*([^\]]+)\]\]/i.exec(out);
     if (pic && !stopped) { setStatus('busy', 'Painting'); Peg.setBase('think'); await paint(pic[1]); }
     if (out) history.push({ role: 'assistant', content: out });
@@ -722,13 +769,15 @@ $('#picBtn').addEventListener('click', () => {
 /* ---------------- settings sheet ---------------- */
 const dlg = $('#settings');
 $('#model').innerHTML = MODELS.map(m => `<option value="${m.id}">${m.label} (${m.note})</option>`).join('');
-function showGroups() { $('#ghGroup').hidden = !$('#modeGh').checked; $('#localGroup').hidden = !$('#modeLocal').checked; }
+function showGroups() { $('#freeGroup').hidden = !$('#modeFree').checked; $('#ghGroup').hidden = !$('#modeGh').checked; $('#localGroup').hidden = !$('#modeLocal').checked; }
 function openSettings(mode) {
-  $('#modeGh').checked = (mode || cfg.mode) === 'github'; $('#modeLocal').checked = !$('#modeGh').checked;
+  const m = mode || cfg.mode; $('#modeFree').checked = m === 'free'; $('#modeGh').checked = m === 'github'; $('#modeLocal').checked = m === 'local';
   $('#model').value = cfg.model; $('#ghToken').value = cfg.token; $('#ghModel').value = cfg.ghModel; $('#ghRemember').checked = cfg.remember;
   showGroups(); dlg.showModal();
 }
 $('#modeGh').addEventListener('change', showGroups);
+$('#modeFree').addEventListener('change', showGroups);
+$('#useFree').addEventListener('click', () => { cfg.mode = 'free'; saveCfg(); refresh(); note('Belgo is awake on the free online brain. Your messages are sent to Pollinations.'); Peg.hello(); });
 $('#modeLocal').addEventListener('change', showGroups);
 $('#openSettings').addEventListener('click', () => openSettings());
 $('#useGh').addEventListener('click', () => openSettings('github'));
@@ -736,7 +785,7 @@ dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close('cancel'); 
 dlg.addEventListener('close', () => {
   if (dlg.returnValue !== 'save') return;
   const wasReady = isReady(), before = cfg.mode + cfg.ghModel;
-  cfg.mode = $('#modeGh').checked ? 'github' : 'local';
+  cfg.mode = $('#modeFree').checked ? 'free' : $('#modeGh').checked ? 'github' : 'local';
   cfg.model = $('#model').value;
   cfg.token = $('#ghToken').value.trim();
   cfg.ghModel = $('#ghModel').value.trim() || 'openai/gpt-4.1-mini';
@@ -744,7 +793,9 @@ dlg.addEventListener('close', () => {
   saveCfg();
   if (engine && engineId !== cfg.model) { try { engine.exit(); } catch {} engine = null; engineId = ''; }
   refresh();
-  if (onGh()) {
+  if (onFree()) {
+    if (!wasReady || !before.startsWith('free')) { note('Belgo is awake on the free online brain. Your messages are sent to Pollinations.'); Peg.hello(); }
+  } else if (onGh()) {
     if (!cfg.token) note('Paste a GitHub token in settings so Belgo can use GitHub Models.', true);
     else if (!wasReady || before !== cfg.mode + cfg.ghModel) { note('Belgo is awake and answers through GitHub Models (' + cfg.ghModel + ').'); Peg.hello(); }
   } else if (!engine) { note('Belgo needs to download ' + modelInfo().label + ' before answering.'); $('#setup').hidden = false; }
@@ -756,6 +807,7 @@ $('#clearChat').addEventListener('click', () => {
 });
 
 refresh();
+if (onFree()) note('Belgo is awake. He answers through a free online brain, so your messages are sent to Pollinations.');
 </script>
 </body>
 </html>

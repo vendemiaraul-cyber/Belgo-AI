@@ -264,7 +264,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
   <main id="log" aria-live="polite">
     <section class="setup" id="setup">
       <h2>Hi, I'm Belgo. I live on your chat bar.</h2>
-      <p id="setupText">My brain runs on your own device with WebLLM, so nothing you write leaves it. The download happens once and is kept for next time.</p>
+      <p id="setupText">My brain runs on your own device, so nothing you write leaves it. The download happens once and is kept for next time.</p>
       <div class="row">
         <button class="btn primary" id="wake">Download my brain</button>
       </div>
@@ -311,7 +311,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
         <svg viewBox="0 0 24 24" id="sendIcon"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
       </button>
     </form>
-    <p class="credits">Inspired by Capri · Runs on <a href="https://webllm.mlc.ai" target="_blank" rel="noopener">WebLLM</a> and <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a></p>
+    <p class="credits">Inspired by Capri · Runs on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> and <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a></p>
   </div>
 </div>
 
@@ -320,7 +320,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     <h2 id="setTitle">Belgo's brain</h2>
     <div class="group" id="localGroup">
       <label class="field"><span>Model</span><select id="model"></select></label>
-      <p class="hint">Runs with WebLLM and WebGPU. Bigger models answer better and need more memory. Each one downloads once. If a model fails to load, Belgo tries the next smaller one by himself.</p>
+      <p class="hint">Runs on your device's processor with wllama, so it works in any modern browser. Bigger models answer better but are slower and need more memory. Each one downloads once. If a model fails to load, Belgo tries the next smaller one by himself.</p>
     </div>
 
     <div class="row">
@@ -332,7 +332,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     <div class="credits-box">
       <h3>Credits</h3>
       <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
-      <p>On-device answers run on <a href="https://webllm.mlc.ai" target="_blank" rel="noopener">WebLLM</a> by the MLC AI team.</p>
+      <p>On-device answers run on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> by Xuan Son Nguyen, built on llama.cpp.</p>
       <p>His computer is <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a>, the x86 emulator by Fabian Hemmer and contributors.</p>
       <p>The pictures come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>.</p>
     </div>
@@ -344,19 +344,18 @@ const $ = s => document.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 /* ---------------- settings ---------------- */
-const LS = 'belgo.settings';
+const LS = 'belgo.settings.v2';
 const MODELS = [
-  { id: 'SmolLM2-360M-Instruct', label: 'SmolLM2 360M', note: 'about 0.4 GB, fastest' },
-  { id: 'Qwen2.5-0.5B-Instruct', label: 'Qwen 2.5 0.5B', note: 'about 0.5 GB, light' },
-  { id: 'Llama-3.2-1B-Instruct', label: 'Llama 3.2 1B', note: 'about 0.9 GB, balanced' },
-  { id: 'Qwen2.5-1.5B-Instruct', label: 'Qwen 2.5 1.5B', note: 'about 1.6 GB' },
-  { id: 'Phi-3.5-mini-instruct', label: 'Phi 3.5 mini', note: 'about 3.7 GB, needs a strong device' },
+  { id: 'smol360', label: 'SmolLM2 360M', note: '0.4 GB, fastest, English only', repo: 'HuggingFaceTB/SmolLM2-360M-Instruct-GGUF', file: 'smollm2-360m-instruct-q8_0.gguf' },
+  { id: 'qwen05', label: 'Qwen 2.5 0.5B', note: '0.5 GB, light', repo: 'Qwen/Qwen2.5-0.5B-Instruct-GGUF', file: 'qwen2.5-0.5b-instruct-q4_k_m.gguf' },
+  { id: 'llama1', label: 'Llama 3.2 1B', note: '0.8 GB, balanced', repo: 'bartowski/Llama-3.2-1B-Instruct-GGUF', file: 'Llama-3.2-1B-Instruct-Q4_K_M.gguf' },
+  { id: 'qwen15', label: 'Qwen 2.5 1.5B', note: '1.1 GB, smartest, slow on phones', repo: 'Qwen/Qwen2.5-1.5B-Instruct-GGUF', file: 'qwen2.5-1.5b-instruct-q4_k_m.gguf' },
 ];
 const onPhone = matchMedia('(pointer:coarse)').matches;
-const cfg = { model: onPhone ? 'Qwen2.5-0.5B-Instruct' : 'Llama-3.2-1B-Instruct' };
+const cfg = { model: onPhone ? 'qwen05' : 'llama1' };
 try { const saved = JSON.parse(localStorage.getItem(LS) || '{}'); if (MODELS.some(m => m.id === saved.model)) cfg.model = saved.model; } catch {}
 function saveCfg() { try { localStorage.setItem(LS, JSON.stringify({ model: cfg.model })); } catch {} }
-const modelInfo = () => MODELS.find(m => m.id === cfg.model) || MODELS[2];
+const modelInfo = () => MODELS.find(m => m.id === cfg.model) || MODELS[1];
 
 /* ---------------- the figure ---------------- */
 const Peg = (() => {
@@ -452,8 +451,7 @@ function refresh() {
   if (busy) { sendBtn.dataset.stop = ''; sendBtn.setAttribute('aria-label', 'Stop'); $('#sendIcon').innerHTML = '<rect x="7" y="7" width="10" height="10" rx="2"/>'; }
   else { delete sendBtn.dataset.stop; sendBtn.setAttribute('aria-label', 'Send'); $('#sendIcon').innerHTML = '<path d="M12 19V5M6 11l6-6 6 6"/>'; }
   $('#wake').textContent = 'Download my brain (' + modelInfo().note.split(',')[0] + ')';
-  $('#setupHint').textContent = navigator.gpu ? '' : 'This browser has no WebGPU, so the on-device brain cannot run here. Try a recent Chrome, Edge or Safari, or use an API key.';
-  $('#wake').disabled = !navigator.gpu;
+  $('#setupHint').textContent = 'The first answer can take a few seconds. Smaller models answer faster.';
 }
 
 /* ---------------- Belgo's computer (v86) ---------------- */
@@ -594,46 +592,41 @@ const PC = (() => {
   return { on: () => !!emu, prompt, report, parse, run };
 })();
 
-/* ---------------- on-device brain (WebLLM) ---------------- */
-let webllmLib = null;
-async function getWebLLM() {
-  if (webllmLib) return webllmLib;
+/* ---------------- on-device brain (wllama) ---------------- */
+/* wllama runs llama.cpp as WebAssembly on the processor. It does not touch the graphics card,
+   which is where the on-device brain used to crash, and it works in every modern browser. */
+const WL = 'https://cdn.jsdelivr.net/npm/@wllama/wllama@3.13.0/esm/';
+let wllamaLib = null;
+async function getWllama() {
+  if (wllamaLib) return wllamaLib;
   let last;
-  for (const url of ['https://esm.run/@mlc-ai/web-llm', 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm/+esm', 'https://unpkg.com/@mlc-ai/web-llm?module']) {
-    try { const m = await import(url); if (m.CreateMLCEngine) return (webllmLib = m); } catch (e) { last = e; }
+  for (const url of [WL + 'index.js', 'https://esm.run/@wllama/wllama@3.13.0', 'https://unpkg.com/@wllama/wllama@3.13.0/esm/index.js']) {
+    try { const m = await import(url); if (m.Wllama) return (wllamaLib = m); } catch (e) { last = e; }
   }
-  throw new Error('The WebLLM library could not be downloaded. Check your connection. ' + (last?.message || ''));
+  throw new Error('The wllama library could not be downloaded. Check your connection. ' + (last?.message || ''));
 }
 async function loadLocal() {
   if (loading) return;
-  if (!navigator.gpu) { note('This browser has no WebGPU, so Belgo cannot think here. Open him in a recent Chrome, Edge or Safari.', true); Peg.flash('shrug', 1400); return; }
   loading = true; Peg.progress(0); Peg.setBase('load'); setStatus('busy', 'Loading 0%'); refresh();
   try {
-    const adapter = await navigator.gpu.requestAdapter();
-    if (!adapter) throw new Error('No graphics adapter is available for WebGPU on this device.');
     try { await navigator.storage?.persist?.(); } catch {}
-    const webllm = await getWebLLM();
-    const list = webllm.prebuiltAppConfig.model_list.map(m => m.model_id);
-    const f16 = adapter.features.has('shader-f16');
-    const resolve = base => [base + (f16 ? '-q4f16_1-MLC' : '-q4f32_1-MLC'), base + '-q4f32_1-MLC', base + '-q4f16_1-MLC']
-      .find(id => list.includes(id) && (f16 || !id.includes('f16')));
+    const { Wllama } = await getWllama();
+    if (engine) { try { await engine.exit(); } catch {} engine = null; }
     /* Try the chosen model, then each smaller one, so a model that is too big for this device does not leave Belgo asleep. */
     const at = Math.max(0, MODELS.findIndex(m => m.id === cfg.model));
-    const order = MODELS.slice(0, at + 1).reverse();
-    if (engine) { try { await engine.unload(); } catch {} engine = null; }
     let lastErr = null;
-    for (const m of order) {
-      const id = resolve(m.id);
-      if (!id) { lastErr = new Error(m.label + ' is not available for this device.'); continue; }
+    for (const m of MODELS.slice(0, at + 1).reverse()) {
       if (m.id !== cfg.model) note(modelInfo().label + ' did not load here, so Belgo is trying ' + m.label + '.');
+      const w = new Wllama({ default: WL + 'wasm/wllama.wasm' });
       try {
         Peg.progress(0);
-        engine = await webllm.CreateMLCEngine(id, {
-          initProgressCallback: r => { const p = r.progress || 0; Peg.progress(p); setStatus('busy', 'Loading ' + Math.round(p * 100) + '%'); }
+        await w.loadModelFromHF({ repo: m.repo, file: m.file }, {
+          n_ctx: 4096, n_gpu_layers: 0,
+          progressCallback: ({ loaded, total }) => { const p = total ? loaded / total : 0; Peg.progress(p); setStatus('busy', 'Loading ' + Math.round(p * 100) + '%'); }
         });
-        engineId = m.id; lastErr = null; break;
+        engine = w; engineId = m.id; lastErr = null; break;
       } catch (e) {
-        lastErr = e; engine = null;
+        lastErr = e; try { await w.exit(); } catch {}
         if (e instanceof TypeError || /fetch|network|quota/i.test(e?.message || '')) break;
       }
     }
@@ -646,7 +639,7 @@ async function loadLocal() {
     setStatus('err', 'Could not load');
     const m = e?.message || String(e);
     const why = /quota/i.test(m) ? ' This device is out of storage space for the model. Free some space or pick a smaller model in settings.'
-      : (e instanceof TypeError || /fetch|network/i.test(m)) ? ' The download was interrupted. Check your connection and press the button again; it continues where it stopped.'
+      : (e instanceof TypeError || /fetch|network/i.test(m)) ? ' The download was interrupted. Check your connection and press the button again.'
       : ' Close other tabs to free memory, or pick a smaller model in settings.';
     note('The brain did not load: ' + m + why, true);
     Peg.flash('shrug', 1400);
@@ -655,22 +648,22 @@ async function loadLocal() {
 
 /* ---------------- answering ---------------- */
 async function* localStream(messages) {
-  stopLocal = false;
+  aborter = new AbortController();
   try {
-    const stream = await engine.chat.completions.create({ messages, stream: true, temperature: 0.7, max_tokens: 700 });
+    const stream = await engine.createChatCompletion({ messages, stream: true, max_tokens: 600, temperature: 0.7, abortSignal: aborter.signal });
     for await (const ch of stream) {
-      if (stopLocal) break;
+      if (stopped) break;
       const t = ch.choices?.[0]?.delta?.content;
       if (t) yield t;
     }
   } catch (e) {
+    if (stopped || aborter.signal.aborted) return;
     const m = e?.message || String(e);
-    if (/lost|disposed|destroy|memory|oom|device/i.test(m)) {
-      try { await engine.unload(); } catch {}
+    if (/memory|oom|abort|unreachable|exit|terminated/i.test(m)) {
+      try { await engine.exit(); } catch {}
       engine = null; engineId = '';
-      throw new Error("Belgo's brain crashed, most likely out of memory. Wake him up again, or pick a smaller model in settings.");
+      throw new Error("Belgo's brain stopped, most likely out of memory. Wake him up again, or pick a smaller model in settings.");
     }
-    try { await engine.resetChat(); } catch {}
     throw e;
   }
 }
@@ -734,7 +727,7 @@ async function send() {
   try {
     for (;;) {
       setStatus('busy', 'Thinking'); Peg.setBase('think');
-      const messages = [{ role: 'system', content: SYSTEM + PC.prompt() + Pic.prompt }, ...history.slice(-8), ...turn.slice(-4)];
+      const messages = [{ role: 'system', content: SYSTEM + PC.prompt() + Pic.prompt }, ...history.slice(-6), ...turn.slice(-4)];
       out = await streamOne(messages);
       const all = PC.parse(out), pic = all.find(a => a[0] === 'image');
       const acts = PC.on() ? all.filter(a => a[0] !== 'image') : [];
@@ -759,7 +752,7 @@ async function send() {
 }
 function stop() {
   stopped = true;
-  stopLocal = true; try { engine?.interruptGenerate(); } catch {}
+  aborter?.abort();
 }
 
 /* ---------------- composer ---------------- */
@@ -789,7 +782,7 @@ dlg.addEventListener('close', () => {
   if (dlg.returnValue !== 'save') return;
   cfg.model = $('#model').value; saveCfg();
   if (engine && engineId !== cfg.model) {
-    try { engine.unload(); } catch {}
+    try { engine.exit(); } catch {}
     engine = null; engineId = '';
     note('Belgo needs to download ' + modelInfo().label + ' before answering.');
     refresh(); $('#setup').hidden = false;

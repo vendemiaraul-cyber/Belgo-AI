@@ -243,6 +243,17 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .codebox button{position:absolute;top:4px;right:6px;border:0;background:transparent;font:600 12px var(--body);color:var(--muted);padding:4px 6px;border-radius:6px}
 .codebox button:hover{background:var(--surface);color:var(--ink)}
 .gamenote{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--surface);font-size:14px}
+/* ---------- YouTube in the chat ---------- */
+.tube{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.tube .screen{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000}
+.tube .screen iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.tube .now{font-weight:600;font-size:14.5px;line-height:1.3}
+.tube .now span{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.tube .more{display:flex;flex-direction:column;gap:6px}
+.tube .more button{display:flex;gap:10px;align-items:center;text-align:left;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:5px;font-size:13.5px;line-height:1.3;min-width:0}
+.tube .more button[aria-pressed="true"]{border-color:var(--ink)}
+.tube .more img{flex:none;width:88px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;background:var(--surface-2)}
+.tube .more span{min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 /* ---------- refreshed UI ---------- */
 .brand{display:flex;align-items:center;gap:8px;min-width:0}
 .brand img{width:30px;height:30px;flex:none}
@@ -318,6 +329,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
         <button class="chip" type="button">Run DOOM</button>
         <button class="chip" type="button">Find images of the Atomium</button>
         <button class="chip" type="button">Open Python</button>
+        <button class="chip" type="button">Play a video of the Atomium</button>
         <button class="chip" type="button">What can you do?</button>
       </div>
     </section>
@@ -562,6 +574,7 @@ const BUILD = '\n\nYou can build small web apps, games and tools that run right 
   + '\n- The code must be complete and run without errors. No placeholders, no "add your code here".'
   + '\nWhen the user asks for a change or reports a bug, send the whole corrected document again.';
 const SEEHINT = '\n\nThe user can attach a photo with the camera button and you can then see and describe it.';
+const TUBEHINT = '\n\nYou can play YouTube videos in the chat: the user writes "play a video of ..." and can then write "skip to 2:30" to jump to a point. You cannot watch or hear the videos yourself, so do not describe what happens in them.';
 const FINDHINT = '\n\nYou can find existing images on the web: the user writes "find images of ..." and they appear in the chat. You can open a coding language: the user writes "open Python" (or any language) or taps the code button, and you then code in it.';
 const GAMEHINT = '\n\nYou have two games the user can play in the chat: DOOM and Quake II. They start when the user writes "run DOOM" or "play Quake II"; tell them that if they ask what you can play.';
 const SYSTEM = 'You are Belgo, a small cheerful figure painted in the black, yellow and red of the Belgian flag. You live on top of the chat bar. Be friendly, clear and concise. Reply in the language the user writes in.';
@@ -1133,6 +1146,84 @@ async function streamOne(messages) {
   }
   return out;
 }
+/* YouTube: "play a video of ..." searches YouTube and plays the result in the chat. "skip to 2:30" jumps to that point. */
+function parseTime(str) {
+  const t = String(str || '').toLowerCase().trim();
+  let m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(t);
+  if (m) return m[3] !== undefined ? +m[1] * 3600 + +m[2] * 60 + +m[3] : +m[1] * 60 + +m[2];
+  let total = 0, any = false;
+  t.replace(/(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m|seconds?|secs?|s)\b/g, (_, n, u) => { any = true; total += n * (u[0] === 'h' ? 3600 : u[0] === 'm' ? 60 : 1); return ''; });
+  if (any) return Math.round(total);
+  return /^\d+$/.test(t) ? +t : null;
+}
+const TIME = '(\\d{1,2}:\\d{2}(?::\\d{2})?|\\d+(?:\\.\\d+)?\\s*(?:hours?|hrs?|h|minutes?|mins?|m|seconds?|secs?|s)(?:\\s*(?:and\\s*)?\\d+\\s*(?:minutes?|mins?|m|seconds?|secs?|s))*)';
+function wantsVideo(text) {
+  const t = text.trim();
+  if (/\b(code|build|make|create|paint|draw)\b/i.test(t)) return null;
+  if (!/\b(videos?|youtube|trailers?|clips?|music video|song|songs)\b/i.test(t) || !/\b(play|watch|find|search|look up|show|put on|open|get)\b/i.test(t)) return null;
+  let at = 0, q = t;
+  const tm = new RegExp('\\b(?:at|from|starting at|starting from)\\s+' + TIME + '\\s*$', 'i').exec(q);
+  if (tm) { at = parseTime(tm[1]) || 0; q = q.slice(0, tm.index); }
+  q = q.replace(/^\s*(?:please\s+)?(?:can you\s+)?(?:play|watch|find|search(?:\s+for)?|look up|show(?:\s+me)?|put on|open|get)\s+(?:me\s+)?/i, '')
+       .replace(/\b(?:on|from|in)\s+youtube\b/ig, '').replace(/^(?:a|an|the|some)\s+/i, '')
+       .replace(/^(?:youtube\s+)?(?:videos?|clips?)\s+(?:of|about|for|on|called)\s+/i, '').replace(/^youtube\s+/i, '').replace(/[.?!]+$/, '').trim();
+  return q.length > 1 ? { q, at } : null;
+}
+function wantsSeek(text) {
+  if (!lastTube) return null;
+  const m = new RegExp('^\\s*(?:please\\s+)?(?:(?:skip|jump|go|seek|move|fast forward|rewind)(?:\\s+(?:it|the video))?\\s+(?:to|at)|(?:play|start|show)(?:\\s+(?:it|the video|that))?\\s+(?:at|from)|at|from)\\s+' + TIME + '\\s*[.!]?$', 'i').exec(text);
+  const sec = m && parseTime(m[1]);
+  return sec === null || sec === undefined || !m ? null : sec;
+}
+const clock = s => (s >= 3600 ? Math.floor(s / 3600) + ':' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') : Math.floor(s / 60)) + ':' + String(s % 60).padStart(2, '0');
+let lastTube = null;
+async function playVideos(q, at) {
+  Peg.setBase('think'); setStatus('busy', 'Searching YouTube');
+  const bubble = add('msg bot has-app', 'Searching YouTube for ' + q + '…');
+  const link = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+  const offer = text => {
+    bubble.classList.remove('has-app'); bubble.textContent = text + ' ';
+    const a = document.createElement('a'); a.className = 'btn sm'; a.href = link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Search on YouTube';
+    a.style.cssText = 'display:inline-block;margin-top:8px;text-decoration:none;color:inherit';
+    bubble.append(document.createElement('br'), a); Peg.setBase('idle'); Peg.flash('shrug', 1400); return false;
+  };
+  let videos = [];
+  try {
+    const r = await fetch('/api/videos?q=' + encodeURIComponent(q));
+    const j = /json/i.test(r.headers.get('content-type') || '') ? await r.json() : { error: 'nokey' };
+    if (j.error === 'nokey') return offer('I can play YouTube videos here once a YouTube key is added to the site (the secret YOUTUBE_API_KEY). Until then:');
+    if (j.error) return offer(j.error);
+    videos = j.videos || [];
+  } catch { return offer('I could not reach YouTube search.'); }
+  if (!videos.length) return offer('YouTube had nothing for ' + q + '.');
+  bubble.textContent = 'From YouTube, for ' + q + ':';
+  const card = document.createElement('div'); card.className = 'tube';
+  const screen = document.createElement('div'); screen.className = 'screen';
+  const now = document.createElement('div'); now.className = 'now';
+  const more = document.createElement('div'); more.className = 'more';
+  const state = { id: '', screen, now, videos };
+  const show = (v, start) => {
+    state.id = v.id; state.title = v.title;
+    const f = document.createElement('iframe');
+    f.src = 'https://www.youtube-nocookie.com/embed/' + v.id + '?autoplay=1&playsinline=1&rel=0' + (start ? '&start=' + start : '');
+    f.title = v.title; f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true;
+    screen.textContent = ''; screen.append(f);
+    now.textContent = v.title; const by = document.createElement('span'); by.textContent = v.channel + (start ? ' · from ' + clock(start) : ''); now.append(by);
+    more.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === v.id)));
+  };
+  state.show = show;
+  videos.slice(1, 5).forEach(v => {
+    const b = document.createElement('button'); b.type = 'button'; b.dataset.id = v.id; b.setAttribute('aria-pressed', 'false');
+    const im = new Image(); im.loading = 'lazy'; im.alt = ''; im.src = v.thumb;
+    const t = document.createElement('span'); t.textContent = v.title;
+    b.append(im, t); b.addEventListener('click', () => { show(v, 0); lastTube = state; }); more.append(b);
+  });
+  card.append(screen, now, more); bubble.append(card);
+  show(videos[0], at); lastTube = state;
+  log.scrollTop = log.scrollHeight; Peg.setBase('idle'); Peg.flash('dance', 2200);
+  return videos[0].title;
+}
+
 /* Photos: shrink on the device, then Belgo's own vision model answers. */
 function shrink(file) {
   return new Promise((ok, no) => {
@@ -1198,6 +1289,23 @@ async function send() {
     else { setLang(lg.lang); note(lg.lang + ' is open. Tell Belgo what to code.'); Peg.hello(); }
     refresh(); return;
   }
+  const seek = wantsSeek(text);
+  if (seek !== null) {
+    add('msg user', text);
+    const v = lastTube.videos.find(x => x.id === lastTube.id);
+    lastTube.show(v, seek); lastTube.screen.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    note('Playing from ' + clock(seek) + '.'); Peg.flash('nod', 950);
+    return;
+  }
+  const vid = wantsVideo(text);
+  if (vid) {
+    add('msg user', text);
+    busy = true; refresh();
+    const got = await playVideos(vid.q, vid.at);
+    history.push({ role: 'user', content: text }, { role: 'assistant', content: got ? 'I played the YouTube video "' + got + '" in the chat. I cannot see or hear the video myself.' : 'I could not play a YouTube video for ' + vid.q + '.' });
+    busy = false; refresh();
+    return;
+  }
   const find = wantsFind(text);
   if (find) {
     add('msg user', text);
@@ -1222,7 +1330,7 @@ async function send() {
   let out = '';
   try {
     setStatus('busy', 'Thinking'); Peg.setBase('think'); lastBubble = null; showTyping();
-    out = await streamOne([{ role: 'system', content: SYSTEM + GAMEHINT + SEEHINT + FINDHINT + Pic.prompt + (onFree() || onGh() ? BUILD : '') + langPrompt() }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
+    out = await streamOne([{ role: 'system', content: SYSTEM + GAMEHINT + SEEHINT + FINDHINT + TUBEHINT + Pic.prompt + (onFree() || onGh() ? BUILD : '') + langPrompt() }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
     clearTyping(); dressCode(lastBubble);
     if (out && showApp(lastBubble, out)) setTimeout(() => Peg.flash('dance', 2400), 50);
     else if (out) setTimeout(() => Peg.flash('nod', 950), 50);

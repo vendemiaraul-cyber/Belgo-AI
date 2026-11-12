@@ -1,0 +1,7 @@
+# Cloudflare Pages configuration. Gives Belgo's own server code access to Workers AI.
+name = "belgo-ai"
+pages_build_output_dir = "."
+compatibility_date = "2026-10-13"
+
+[ai]
+binding = "AI"

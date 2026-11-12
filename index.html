@@ -263,7 +263,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
         <svg viewBox="0 0 24 24" id="sendIcon"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
       </button>
     </form>
-    <p class="credits">Inspired by Capri · Free brain by <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a></p>
+    <p class="credits">Inspired by Capri · Runs on <a href="https://developers.cloudflare.com/workers-ai/" target="_blank" rel="noopener">Cloudflare Workers AI</a></p>
   </div>
 </div>
 
@@ -271,13 +271,13 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
   <form class="sheet" method="dialog" id="settingsForm">
     <h2 id="setTitle">Belgo's brain</h2>
     <div class="seg">
-      <input type="radio" name="mode" id="modeFree" value="free"><label for="modeFree">Free online</label>
+      <input type="radio" name="mode" id="modeFree" value="free"><label for="modeFree">Own AI</label>
       <input type="radio" name="mode" id="modeGh" value="github"><label for="modeGh">GitHub</label>
       <input type="radio" name="mode" id="modeLocal" value="local"><label for="modeLocal">On device</label>
     </div>
 
     <div class="group" id="freeGroup">
-      <p class="hint">Works straight away: no key, no account, no download. Belgo answers through the free Pollinations text service, so your messages are sent to it. When it is busy he waits a few seconds and tries again by himself.</p>
+      <p class="hint">No key, no account, no download. Belgo first uses his own AI, which runs gpt-oss on this site's Cloudflare account, and the header shows "Own AI" when it answers. If that is not available he falls back to the free Pollinations text service, where your messages are then sent.</p>
     </div>
 
     <div class="group" id="ghGroup">
@@ -302,7 +302,8 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     <div class="credits-box">
       <h3>Credits</h3>
       <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
-      <p>Free online answers come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>; the GitHub option uses <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>.</p>
+      <p>Belgo's own AI runs <a href="https://developers.cloudflare.com/workers-ai/models/gpt-oss-120b/" target="_blank" rel="noopener">gpt-oss</a> by OpenAI and FLUX by Black Forest Labs on Cloudflare Workers AI.</p>
+      <p>Backup answers come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>; the GitHub option uses <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>.</p>
       <p>On-device answers run on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> by Xuan Son Nguyen, built on llama.cpp.</p>
       <p>Pictures are painted by <a href="https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo" target="_blank" rel="noopener">Z-Image-Turbo</a> (Tongyi-MAI) and <a href="https://huggingface.co/spaces/black-forest-labs/FLUX.2-klein-4B" target="_blank" rel="noopener">FLUX.2 klein</a> (Black Forest Labs) on their public Hugging Face Spaces.</p>
     </div>
@@ -422,7 +423,7 @@ function refresh() {
   const ready = isReady();
   $('#setup').hidden = ready || loading || history.length > 0;
   if (!loading && !busy) {
-    if (ready) setStatus('ready', onFree() ? 'Free online' : onGh() ? 'GitHub · ' + cfg.ghModel.split('/').pop() : 'On device · ' + ((MODELS.find(m => m.id === engineId) || modelInfo()).label));
+    if (ready) setStatus('ready', onFree() ? (ownBrain ? 'Own AI · ' + ownBrain : 'Online') : onGh() ? 'GitHub · ' + cfg.ghModel.split('/').pop() : 'On device · ' + ((MODELS.find(m => m.id === engineId) || modelInfo()).label));
     else setStatus('idle', 'Asleep');
   }
   input.placeholder = ready ? 'Message Belgo' : (loading ? 'Belgo is loading…' : 'Wake Belgo up first');
@@ -565,8 +566,29 @@ async function freeOnce(messages, signal) {
   const raw = await res.text();
   try { const j = JSON.parse(raw); return { text: (j.choices?.[0]?.message?.content || '').trim() }; } catch { return { text: raw.trim() }; }
 }
+/* Belgo's own brain: the /api/chat function that ships with this site and runs gpt-oss on Cloudflare Workers AI. */
+const hosted = /^https?:$/.test(location.protocol);
+let ownBrain = '', ownDown = 0;
+async function ownChat(messages, signal) {
+  const r = await fetch('/api/chat', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages }) });
+  if (!/json/i.test(r.headers.get('content-type') || '')) throw new Error('this site has no server code deployed');
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.text) throw new Error(j.error || 'answered ' + r.status);
+  return j;
+}
 async function* freeStream(messages) {
   aborter = new AbortController();
+  if (hosted && Date.now() - ownDown > 120000) {
+    try {
+      const j = await ownChat(messages, aborter.signal);
+      ownBrain = j.model || 'own AI';
+      yield j.text; return;
+    } catch (e) {
+      if (e?.name === 'AbortError') throw e;
+      ownBrain = ''; ownDown = Date.now();
+      console.warn('Own brain unavailable:', e?.message || e);
+    }
+  }
   for (let attempt = 0; attempt < 4; attempt++) {
     let r;
     try { r = await freeOnce(messages, aborter.signal); }
@@ -626,7 +648,7 @@ async function* githubStream(messages) {
 }
 
 /* ---------------- pictures (no key) ----------------
-   Z-Image-Turbo first, FLUX.2 klein as the backup, both on public Hugging Face Spaces. */
+   Belgo's own /api/image function first (FLUX on Cloudflare Workers AI), then Z-Image-Turbo and FLUX.2 klein on public Hugging Face Spaces. */
 async function gradio(base, endpoint, data, ms = 150000) {
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
   try {
@@ -656,6 +678,17 @@ async function gradio(base, endpoint, data, ms = 150000) {
 }
 const fileUrl = (base, f) => f?.url || (f?.path ? base + '/gradio_api/file=' + f.path : '');
 const PAINTERS = [
+  { name: "Belgo's own AI", async run(text) {
+      if (!hosted) throw new Error('only works on the deployed site');
+      const r = await fetch('/api/image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text }) });
+      const type = r.headers.get('content-type') || '';
+      if (!r.ok || !type.startsWith('image/')) {
+        const j = /json/i.test(type) ? await r.json().catch(() => ({})) : {};
+        throw new Error(j.error || 'this site has no server code deployed');
+      }
+      this.label = r.headers.get('x-model') || this.name;
+      return URL.createObjectURL(await r.blob());
+    } },
   { name: 'Z-Image-Turbo', async run(text) {
       const base = 'https://tongyi-mai-z-image-turbo.hf.space';
       const out = await gradio(base, 'generate', [text, '1024x1024 ( 1:1 )', 42, 8, 3, true, []]);
@@ -678,6 +711,7 @@ const Pic = {
     const t0 = Date.now(); let who = PAINTERS[0].name;
     const tick = setInterval(() => { label.textContent = 'Painting with ' + who + '… ' + Math.round((Date.now() - t0) / 1000) + 's'; }, 1000);
     label.textContent = 'Painting…';
+    const why = [];
     try {
       for (const painter of PAINTERS) {
         who = painter.name;
@@ -687,14 +721,14 @@ const Pic = {
           const im = new Image(); im.alt = text;
           await showImg(im, url);
           box.textContent = '';
-          const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Made with ' + painter.name + ' · Open full size';
+          const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Made with ' + (painter.label || painter.name) + ' · Open full size';
           box.append(im, a); log.scrollTop = log.scrollHeight;
           return 'The picture is finished and is showing in the chat.';
-        } catch {}
+        } catch (e) { why.push(painter.name + ': ' + String(e?.message || e).slice(0, 120)); }
       }
       box.remove();
-      const m = 'The free picture services are busy or over their free limit right now. Try again in a minute.';
-      note(m, true); return 'The picture failed: ' + m;
+      const m = 'No painter could make the picture. ' + why.join(' · ');
+      note(m, true); return 'The picture failed.';
     } finally { clearInterval(tick); }
   }
 };
@@ -777,7 +811,7 @@ function openSettings(mode) {
 }
 $('#modeGh').addEventListener('change', showGroups);
 $('#modeFree').addEventListener('change', showGroups);
-$('#useFree').addEventListener('click', () => { cfg.mode = 'free'; saveCfg(); refresh(); note('Belgo is awake on the free online brain. Your messages are sent to Pollinations.'); Peg.hello(); });
+$('#useFree').addEventListener('click', () => { cfg.mode = 'free'; saveCfg(); refresh(); note('Belgo is awake.'); Peg.hello(); });
 $('#modeLocal').addEventListener('change', showGroups);
 $('#openSettings').addEventListener('click', () => openSettings());
 $('#useGh').addEventListener('click', () => openSettings('github'));
@@ -794,7 +828,7 @@ dlg.addEventListener('close', () => {
   if (engine && engineId !== cfg.model) { try { engine.exit(); } catch {} engine = null; engineId = ''; }
   refresh();
   if (onFree()) {
-    if (!wasReady || !before.startsWith('free')) { note('Belgo is awake on the free online brain. Your messages are sent to Pollinations.'); Peg.hello(); }
+    if (!wasReady || !before.startsWith('free')) { note('Belgo is awake.'); Peg.hello(); }
   } else if (onGh()) {
     if (!cfg.token) note('Paste a GitHub token in settings so Belgo can use GitHub Models.', true);
     else if (!wasReady || before !== cfg.mode + cfg.ghModel) { note('Belgo is awake and answers through GitHub Models (' + cfg.ghModel + ').'); Peg.hello(); }
@@ -807,7 +841,7 @@ $('#clearChat').addEventListener('click', () => {
 });
 
 refresh();
-if (onFree()) note('Belgo is awake. He answers through a free online brain, so your messages are sent to Pollinations.');
+if (onFree()) note('Belgo is awake. Say hello.');
 </script>
 </body>
 </html>

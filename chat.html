@@ -831,7 +831,7 @@ async function* githubStream(messages) {
 }
 
 /* ---------------- pictures (no key) ----------------
-   Z-Image-Turbo on its public Hugging Face Space first, because it paints best. Then Belgo's own /api/image function (FLUX on Cloudflare Workers AI), then FLUX.2 klein on Hugging Face. */
+   Belgo's own /api/image function first (FLUX.2 klein on Cloudflare Workers AI), then Z-Image-Turbo and FLUX.2 klein on public Hugging Face Spaces. FLUX.1 schnell is the very last resort because it paints worse. */
 async function gradio(base, endpoint, data, ms = 150000) {
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
   try {
@@ -861,14 +861,9 @@ async function gradio(base, endpoint, data, ms = 150000) {
 }
 const fileUrl = (base, f) => f?.url || (f?.path ? base + '/gradio_api/file=' + f.path : '');
 const PAINTERS = [
-  { name: 'Z-Image-Turbo', async run(text) {
-      const base = 'https://tongyi-mai-z-image-turbo.hf.space';
-      const out = await gradio(base, 'generate', [text, '1024x1024 ( 1:1 )', 42, 8, 3, true, []]);
-      const first = out?.[0]?.[0]; return fileUrl(base, first?.image || first);
-    } },
-  { name: "Belgo's own AI", async run(text) {
+  { name: "Belgo's own AI", tier: 'best', async run(text) {
       if (!hosted) throw new Error('only works on the deployed site');
-      const r = await fetch('/api/image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text }) });
+      const r = await fetch('/api/image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text, tier: this.tier }) });
       const type = r.headers.get('content-type') || '';
       if (!r.ok || !type.startsWith('image/')) {
         const j = /json/i.test(type) ? await r.json().catch(() => ({})) : {};
@@ -877,10 +872,26 @@ const PAINTERS = [
       this.label = r.headers.get('x-model') || this.name;
       return URL.createObjectURL(await r.blob());
     } },
+  { name: 'Z-Image-Turbo', async run(text) {
+      const base = 'https://tongyi-mai-z-image-turbo.hf.space';
+      const out = await gradio(base, 'generate', [text, '1024x1024 ( 1:1 )', 42, 8, 3, true, []]);
+      const first = out?.[0]?.[0]; return fileUrl(base, first?.image || first);
+    } },
   { name: 'FLUX.2 klein', async run(text) {
       const base = 'https://black-forest-labs-flux-2-klein-4b.hf.space';
       const out = await gradio(base, 'infer', [text, [], 'Distilled (4 steps)', 0, true, 1024, 1024, 4, 1, false]);
       return fileUrl(base, out?.[0]);
+    } },
+  { name: 'FLUX.1 schnell', tier: 'last', async run(text) {
+      if (!hosted) throw new Error('only works on the deployed site');
+      const r = await fetch('/api/image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text, tier: this.tier }) });
+      const type = r.headers.get('content-type') || '';
+      if (!r.ok || !type.startsWith('image/')) {
+        const j = /json/i.test(type) ? await r.json().catch(() => ({})) : {};
+        throw new Error(j.error || 'this site has no server code deployed');
+      }
+      this.label = r.headers.get('x-model') || this.name;
+      return URL.createObjectURL(await r.blob());
     } },
 ];
 const showImg = (im, url) => new Promise((ok, no) => { im.onload = ok; im.onerror = () => no(new Error('the picture did not load')); im.src = url; });

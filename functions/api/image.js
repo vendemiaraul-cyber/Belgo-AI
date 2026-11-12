@@ -30,8 +30,10 @@ export async function onRequestPost({ request, env }) {
   if (!prompt) return fail('No description.', 400);
 
   let last = '';
-  // The larger FLUX.2 klein paints better, so it goes first; the smaller ones are the backups.
-  for (const [name, run] of [['FLUX.2 klein 9B', klein('9b')], ['FLUX.2 klein 4B', klein('4b')], ['FLUX.1 schnell', schnell]]) {
+  // FLUX.2 klein paints much better than FLUX.1 schnell. The page asks for schnell only as its very last resort
+  // (tier "last"), after every other painter has failed, so a busy moment no longer drops the quality.
+  const best = [['FLUX.2 klein 9B', klein('9b')], ['FLUX.2 klein 4B', klein('4b')], ['FLUX.2 klein 4B', klein('4b')]];
+  for (const [name, run] of body?.tier === 'last' ? [['FLUX.1 schnell', schnell]] : best) {
     try {
       const bytes = await toBytes(await run(env, prompt));
       if (bytes.length > 1000) return new Response(bytes, { headers: { 'content-type': kind(bytes), 'x-model': name, 'cache-control': 'no-store' } });

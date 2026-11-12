@@ -2,12 +2,18 @@
 const MODELS = ['@cf/openai/gpt-oss-120b', '@cf/openai/gpt-oss-20b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast'];
 // For building apps: the dedicated coding model first (it needs the Workers Paid plan and is refused on the
 // free plan at no cost), then the best free models, then the general ones above.
-const CODE_MODELS = ['@cf/moonshotai/kimi-k2.7-code', '@cf/qwen/qwen3.8-27b', '@cf/zai-org/glm-4.7-flash', ...MODELS];
+const CODE_MODELS = ['@cf/moonshotai/kimi-k2.7-code', '@cf/openai/gpt-oss-120b', '@cf/zai-org/glm-4.7-flash', '@cf/qwen/qwen3.8-27b', ...MODELS];
+// Coding models the person can pick in Belgo's settings. The picked one is tried first; the list above is the backup.
+const CODE_CHOICES = {
+  'gpt-oss-120b': '@cf/openai/gpt-oss-120b', 'glm-4.7-flash': '@cf/zai-org/glm-4.7-flash', 'qwen3.8-27b': '@cf/qwen/qwen3.8-27b',
+  'gemma-4': '@cf/google/gemma-4-26b-a4b-it', 'kimi-k2.7-code': '@cf/moonshotai/kimi-k2.7-code', 'glm-5.3-flash': '@cf/zai-org/glm-5.3-flash',
+};
+const CEREBRAS_HAS = { 'gpt-oss-120b': 'gpt-oss-120b', 'qwen3.8-27b': 'qwen-3.8-27b' };
 
 // Cerebras (free key stored as the secret CEREBRAS_API_KEY) answers first when the key is set.
 // Chat uses gpt-oss first; app building uses Qwen first.
 const CEREBRAS_CHAT = ['gpt-oss-120b', 'qwen-3.8-27b'];
-const CEREBRAS_CODE = ['qwen-3.8-27b', 'gpt-oss-120b'];
+const CEREBRAS_CODE = ['gpt-oss-120b', 'qwen-3.8-27b'];
 // Models that can look at a picture, on Workers AI.
 const VISION = ['@cf/qwen/qwen3.8-27b', '@cf/google/gemma-4-26b-a4b-it'];
 async function cerebras(key, messages, maxTokens, models) {
@@ -79,14 +85,17 @@ export async function onRequestPost({ request, env }) {
     return json({ error: last || 'No model could look at the picture.' }, 502);
   }
 
+  const picked = coding && CODE_CHOICES[body.model] || '';
   if (env.CEREBRAS_API_KEY) {
-    const r = await cerebras(env.CEREBRAS_API_KEY, messages, coding ? 8000 : 2000, coding ? CEREBRAS_CODE : CEREBRAS_CHAT);
+    const want = coding && picked ? (CEREBRAS_HAS[body.model] ? [CEREBRAS_HAS[body.model]] : []) : coding ? CEREBRAS_CODE : CEREBRAS_CHAT;
+    const r = want.length ? await cerebras(env.CEREBRAS_API_KEY, messages, coding ? 16000 : 2000, want) : { error: '' };
     if (r.text) return json(r);
     last = r.error;
   }
   if (!env.AI) return json({ error: last || 'No AI is connected to this site.' }, 503);
-  for (const model of coding ? CODE_MODELS : MODELS) {
-    for (const input of [{ messages, max_tokens: coding ? 8000 : 2000 }, { input: messages }]) {
+  const chain = !coding ? MODELS : picked ? [picked, ...CODE_MODELS.filter(m => m !== picked)] : CODE_MODELS;
+  for (const model of chain) {
+    for (const input of [{ messages, max_tokens: coding ? 16000 : 2000 }, { input: messages }]) {
       try {
         const text = pick(await env.AI.run(model, input)).trim();
         if (text) return json({ text, model: model.split('/').pop() });

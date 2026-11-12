@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Presenting Belgo</title>
+<meta name="description" content="Belgo is a chat companion who lives on your chat bar. He chats, builds apps, paints, finds images, reads photos and runs DOOM.">
+<link rel="icon" type="image/svg+xml" href="icons/face.svg">
+<link rel="apple-touch-icon" href="icons/app-180.png">
+<meta name="theme-color" content="#16140f">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Rubik:wght@400;500;600&display=swap">
+<style>
+/* Layout: one long page. A stage where Belgo stands on a chat bar, then what he does, then other people's videos of the models he uses. */
+:root{
+  --bg:#ffffff; --surface:#f2f2ef; --surface-2:#e7e7e2; --line:#d9d9d3; --ink:#16140f; --muted:#62605a;
+  --f-black:#16140f; --f-yellow:#fdda24; --f-red:#ef3340; --outline:#16140f;
+  --display:"Baloo 2","Rubik",system-ui,sans-serif; --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#121110; --surface:#1f1e1b; --surface-2:#2a2925; --line:#37352f; --ink:#f3f1ea; --muted:#a6a297; --outline:#77736a; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 var(--body);-webkit-text-size-adjust:100%}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--f-red);outline-offset:3px}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);line-height:1.02;margin:0;text-wrap:balance}
+h1{font-size:clamp(54px,13vw,128px);font-weight:800;letter-spacing:-.02em}
+h1 span{display:block;font-size:.34em;font-weight:700;letter-spacing:.01em;color:var(--muted)}
+h2{font-size:clamp(30px,6vw,48px);font-weight:800}
+p{margin:0}
+.btn{display:inline-block;border:1.5px solid var(--f-black);background:var(--f-yellow);color:#16140f;border-radius:99px;padding:13px 24px;font-weight:600;font-size:17px;text-decoration:none;transition:transform .12s}
+.btn:active{transform:scale(.95)}
+.btn.ghost{background:transparent;border-color:var(--ink);color:var(--ink)}
+
+/* hero */
+.hero{padding-block:clamp(36px,8vw,84px) 0}
+.hero p.lead{font-size:clamp(18px,2.6vw,22px);max-width:34ch;margin-top:18px}
+.hero .row{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.stage{position:relative;margin-top:128px}
+.bar{display:flex;align-items:center;gap:10px;border:2px solid var(--outline);border-radius:26px;padding:8px 8px 8px 20px;background:var(--bg)}
+.bar span{flex:1;min-width:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar i{flex:none;width:44px;height:44px;border-radius:50%;background:var(--f-yellow);border:1.5px solid var(--f-black);display:grid;place-items:center}
+.bar svg{width:20px;height:20px;fill:none;stroke:#16140f;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.peg{position:absolute;bottom:calc(100% - 2px);left:0;width:60px;animation:stroll 14s ease-in-out infinite alternate}
+.peg svg{display:block;width:60px;height:100px;overflow:visible;filter:drop-shadow(1px 0 0 var(--outline)) drop-shadow(-1px 0 0 var(--outline)) drop-shadow(0 1px 0 var(--outline)) drop-shadow(0 -1px 0 var(--outline))}
+.peg .part{fill:url(#flag)}
+#pLegL{transform-origin:48px 126px;animation:swingA .44s ease-in-out infinite alternate}
+#pLegR{transform-origin:72px 126px;animation:swingB .44s ease-in-out infinite alternate}
+#pArmL{transform-origin:22px 71px;animation:swingB .44s ease-in-out infinite alternate}
+#pArmR{transform-origin:98px 71px;animation:wave .34s ease-in-out infinite alternate}
+#pBody{transform-origin:60px 194px;animation:waddle .44s ease-in-out infinite alternate}
+@keyframes stroll{from{left:4%}to{left:calc(96% - 60px)}}
+@keyframes waddle{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+@keyframes swingA{from{transform:rotate(-13deg)}to{transform:rotate(13deg)}}
+@keyframes swingB{from{transform:rotate(13deg)}to{transform:rotate(-13deg)}}
+@keyframes wave{from{transform:rotate(-125deg)}to{transform:rotate(-160deg)}}
+
+/* what he does */
+section{padding-block:clamp(56px,9vw,96px) 0}
+.does{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0 36px;margin-top:22px}
+.does div{padding:18px 0;border-top:1.5px solid var(--line)}
+.does h3{font-size:22px;font-weight:800}
+.does p{color:var(--muted);margin-top:4px;max-width:44ch}
+.does code{font:600 13px var(--body);background:var(--surface);border-radius:6px;padding:2px 7px;color:var(--ink);white-space:nowrap}
+.does small{display:block;margin-top:8px;font-size:13px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
+
+/* videos */
+.note{color:var(--muted);max-width:62ch;margin-top:12px}
+.videos{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:26px 22px;margin-top:26px}
+.video figure{margin:0}
+.player{position:relative;display:block;width:100%;aspect-ratio:16/9;border:0;padding:0;border-radius:14px;overflow:hidden;background:var(--surface-2) center/cover no-repeat;cursor:pointer}
+.player::after{content:"";position:absolute;inset:0;margin:auto;width:66px;height:66px;border-radius:50%;background:var(--f-yellow) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6.5v11l9-5.5z' fill='%2316140f'/%3E%3C/svg%3E") center/30px no-repeat;border:2px solid #16140f;transition:transform .15s}
+.player:hover::after{transform:scale(1.08)}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.player.on::after{display:none}
+.video figcaption{margin-top:10px}
+.video b{display:block;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.video span{display:block;margin-top:2px}
+.video a{display:inline-block;margin-top:4px;font-size:14px;color:var(--muted)}
+
+.end{padding-block:clamp(64px,10vw,110px) 0;text-align:left}
+.end p{margin-top:12px;max-width:40ch}
+.end .btn{margin-top:22px}
+footer{padding-block:48px max(36px,env(safe-area-inset-bottom,0px));color:var(--muted);font-size:14px}
+footer p{max-width:70ch}
+@media (prefers-reduced-motion:reduce){.peg,.peg *{animation:none!important}.peg{left:12%}}
+</style>
+</head>
+<body>
+<header class="hero wrap">
+  <h1><span>Presenting</span>Belgo</h1>
+  <p class="lead">A small figure in black, yellow and red who lives on your chat bar. He chats, builds apps, paints, finds images, reads photos and runs DOOM.</p>
+  <div class="row">
+    <a class="btn" href="./">Open Belgo</a>
+    <a class="btn ghost" href="#videos">Watch the models</a>
+  </div>
+  <div class="stage" aria-hidden="true">
+    <div class="peg">
+      <svg viewBox="0 0 120 200">
+        <defs><linearGradient id="flag" gradientUnits="userSpaceOnUse" x1="34" y1="0" x2="86" y2="0">
+          <stop offset="0" stop-color="#16140f"/><stop offset=".335" stop-color="#16140f"/>
+          <stop offset=".335" stop-color="#fdda24"/><stop offset=".665" stop-color="#fdda24"/>
+          <stop offset=".665" stop-color="#ef3340"/><stop offset="1" stop-color="#ef3340"/>
+        </linearGradient></defs>
+        <g id="pBody">
+          <rect class="part" id="pLegL" x="37" y="116" width="22" height="78" rx="10"/>
+          <rect class="part" id="pLegR" x="61" y="116" width="22" height="78" rx="10"/>
+          <rect class="part" id="pArmL" x="12.5" y="62" width="18.5" height="66" rx="9.25"/>
+          <rect class="part" id="pArmR" x="89" y="62" width="18.5" height="66" rx="9.25"/>
+          <path class="part" d="M34 82a22 22 0 0 1 22-22h8a22 22 0 0 1 22 22v50H34z"/>
+          <circle class="part" cx="60" cy="30" r="24"/>
+        </g>
+      </svg>
+    </div>
+    <div class="bar"><span>Code me a snake game</span><i><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></i></div>
+  </div>
+</header>
+
+<section class="wrap" id="does">
+  <h2>What he does</h2>
+  <div class="does">
+    <div><h3>Chats</h3><p>Ask him anything. He answers in the language you write in.</p><small>gpt-oss by OpenAI</small></div>
+    <div><h3>Builds apps</h3><p>Say <code>Code me a snake game</code> and it runs inside the chat. Tell him what to fix and he rebuilds it.</p><small>Qwen 3.8 by Alibaba</small></div>
+    <div><h3>Codes in 32 languages</h3><p>Say <code>open Python</code> and he writes everything in that language until you close it.</p><small>Qwen 3.8 by Alibaba</small></div>
+    <div><h3>Paints</h3><p>Describe a picture and he paints it at 1024 by 1024.</p><small>FLUX by Black Forest Labs · Z-Image-Turbo by Tongyi-MAI</small></div>
+    <div><h3>Finds images</h3><p>Say <code>find images of the Atomium</code> for openly licensed pictures with their sources.</p><small>Wikimedia Commons · Openverse</small></div>
+    <div><h3>Reads photos</h3><p>Attach a photo with the camera button and ask about it.</p><small>Qwen 3.8 · Gemma 4 by Google</small></div>
+    <div><h3>Runs DOOM</h3><p>Say <code>run DOOM</code> and the shareware episode plays inside the chat bar, with Belgo standing on top.</p><small>id Software · wasm port by Cornelius Diekmann</small></div>
+  </div>
+</section>
+
+<section class="wrap" id="videos">
+  <h2>The models behind him</h2>
+  <p class="note">Belgo borrows his skills from open models. These videos are by other people on YouTube and show those models at work. They are not recordings of Belgo himself.</p>
+  <div class="videos">
+    <div class="video"><figure>
+      <button class="player" data-id="y2ZVOtWWR9Y" aria-label="Play: Qwen 3.8 Built Rocket League From One Prompt"></button>
+      <figcaption><b>Builds apps · Qwen 3.8</b><span>Qwen 3.8 Built Rocket League From One Prompt. Then Got All Night.</span><a href="https://www.youtube.com/shorts/y2ZVOtWWR9Y" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+    <div class="video"><figure>
+      <button class="player" data-id="m8HFQ8cZlTU" aria-label="Play: I Made Qwen 3.8 and Claude Opus 5 Build the Same Game"></button>
+      <figcaption><b>Builds apps · Qwen 3.8</b><span>I Made Qwen 3.8 and Claude Opus 5 Build the Same Game</span><a href="https://www.youtube.com/watch?v=m8HFQ8cZlTU" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+    <div class="video"><figure>
+      <button class="player" data-id="w_1ZIXdDxlQ" aria-label="Play: OpenAI's Opensource OSS 120B and 20B, Fully Tested"></button>
+      <figcaption><b>Chats · gpt-oss</b><span>OpenAI's Opensource OSS 120B &amp; 20B (Fully Tested)</span><a href="https://www.youtube.com/watch?v=w_1ZIXdDxlQ" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+    <div class="video"><figure>
+      <button class="player" data-id="JXgBe3twxbc" aria-label="Play: Flux 2 Klein Just Dropped"></button>
+      <figcaption><b>Paints · FLUX.2 klein</b><span>Flux 2 Klein Just Dropped. This Image Editing Model Isn't Just About Speed!</span><a href="https://www.youtube.com/watch?v=JXgBe3twxbc" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+    <div class="video"><figure>
+      <button class="player" data-id="sPQQPpQ9X4E" aria-label="Play: Z Image Turbo, free open-source image model"></button>
+      <figcaption><b>Paints · Z-Image-Turbo</b><span>Z Image Turbo (FREE): This Open-Source AI Changed Image Generation Forever!</span><a href="https://www.youtube.com/watch?v=sPQQPpQ9X4E" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+    <div class="video"><figure>
+      <button class="player" data-id="uYSybTDO5qY" aria-label="Play: Cerebras Inference in 30 seconds"></button>
+      <figcaption><b>Answers fast · Cerebras</b><span>Cerebras Inference in 30 seconds</span><a href="https://www.youtube.com/watch?v=uYSybTDO5qY" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+  </div>
+</section>
+
+<section class="wrap end">
+  <h2>Go and meet him</h2>
+  <p>No account and no download. Type in the chat bar and he gets to work.</p>
+  <a class="btn" href="./">Open Belgo</a>
+</section>
+
+<footer class="wrap">
+  <p>Inspired by Capri. Belgo runs on Cloudflare Workers AI and Cerebras, with gpt-oss (OpenAI), Qwen 3.8 (Alibaba), Gemma 4 (Google), FLUX (Black Forest Labs) and Z-Image-Turbo (Tongyi-MAI). DOOM by id Software. The videos belong to their creators on YouTube.</p>
+</footer>
+
+<script>
+/* Videos load only when tapped: a thumbnail first, then the YouTube player in its place. */
+document.querySelectorAll('.player').forEach(function (b) {
+  var id = b.dataset.id;
+  b.style.backgroundImage = 'url(https://i.ytimg.com/vi/' + id + '/hqdefault.jpg)';
+  b.addEventListener('click', function () {
+    if (b.classList.contains('on')) return;
+    var f = document.createElement('iframe');
+    f.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1';
+    f.title = b.getAttribute('aria-label').replace(/^Play: /, '');
+    f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    f.allowFullscreen = true;
+    b.classList.add('on'); b.style.backgroundImage = 'none'; b.append(f);
+  });
+});
+</script>
+</body>
+</html>

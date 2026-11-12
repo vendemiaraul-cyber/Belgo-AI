@@ -415,6 +415,17 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 
     <div class="group" id="freeGroup">
       <p class="hint">No key, no account, no download. Belgo first uses his own AI, which runs gpt-oss on this site's Cloudflare account, and the header shows "Own AI" when it answers. If that is not available he falls back to the free Pollinations text service, where your messages are then sent.</p>
+      <label class="field"><span>Model for building apps and code</span>
+        <select id="codeModel">
+          <option value="auto">Automatic (best one available)</option>
+          <option value="gpt-oss-120b">gpt-oss 120B (OpenAI), free</option>
+          <option value="glm-4.7-flash">GLM-4.7 Flash (Z.ai), free</option>
+          <option value="qwen3.8-27b">Qwen 3.8 27B (Alibaba), free</option>
+          <option value="gemma-4">Gemma 4 26B (Google), free</option>
+          <option value="kimi-k2.7-code">Kimi K2.7 Code (Moonshot AI), paid plan</option>
+          <option value="glm-5.3-flash">GLM-5.3 Flash (Z.ai), paid plan</option>
+        </select></label>
+      <p class="hint">The header shows which model answered. If the one you pick is not available, Belgo uses the next one. The two paid ones need Cloudflare's Workers Paid plan.</p>
     </div>
 
     <div class="group" id="ghGroup">
@@ -463,16 +474,17 @@ const MODELS = [
   { id: 'qwen15', label: 'Qwen 2.5 1.5B', note: '1.1 GB, smartest, slow on phones', repo: 'Qwen/Qwen2.5-1.5B-Instruct-GGUF', file: 'qwen2.5-1.5b-instruct-q4_k_m.gguf' },
 ];
 const onPhone = matchMedia('(pointer:coarse)').matches;
-const cfg = { mode: 'free', ghModel: 'openai/gpt-4.1-mini', token: '', remember: false, model: onPhone ? 'qwen05' : 'llama1' };
+const cfg = { mode: 'free', codeModel: 'auto', ghModel: 'openai/gpt-4.1-mini', token: '', remember: false, model: onPhone ? 'qwen05' : 'llama1' };
 try {
   const saved = JSON.parse(localStorage.getItem(LS) || '{}');
   if (MODELS.some(m => m.id === saved.model)) cfg.model = saved.model;
   if (['free', 'local', 'github'].includes(saved.mode)) cfg.mode = saved.mode;
   if (saved.ghModel) cfg.ghModel = saved.ghModel;
+  if (saved.codeModel) cfg.codeModel = saved.codeModel;
   if (saved.remember && saved.token) { cfg.token = saved.token; cfg.remember = true; }
 } catch {}
 function saveCfg() {
-  try { localStorage.setItem(LS, JSON.stringify({ mode: cfg.mode, model: cfg.model, ghModel: cfg.ghModel, remember: cfg.remember, token: cfg.remember ? cfg.token : '' })); } catch {}
+  try { localStorage.setItem(LS, JSON.stringify({ mode: cfg.mode, codeModel: cfg.codeModel, model: cfg.model, ghModel: cfg.ghModel, remember: cfg.remember, token: cfg.remember ? cfg.token : '' })); } catch {}
 }
 const modelInfo = () => MODELS.find(m => m.id === cfg.model) || MODELS[1];
 
@@ -534,7 +546,16 @@ const Peg = (() => {
 })();
 
 /* ---------------- chat state and rendering ---------------- */
-const BUILD = '\n\nYou can build small web apps, games and tools that run right inside the chat. When the user asks you to build, make or code one, reply with one short sentence and then the complete app as a single HTML document inside one ```html code block. Put all CSS and JavaScript inline in that document. Do not load anything from other websites: no external scripts, fonts or images. Make it work with both mouse and touch, and fit a small screen. When the user asks for a change or reports a bug, send the whole corrected document again.';
+const BUILD = '\n\nYou can build small web apps, games and tools that run right inside the chat. When the user asks you to build, make or code one, reply with one short sentence and then the complete app as a single HTML document inside one ```html code block. Put all CSS and JavaScript inline in that document. Do not load anything from other websites: no external scripts, fonts or images.'
+  + '\nMake it look good, not like a bare prototype. Rules for every app:'
+  + '\n- Pick a deliberate colour palette of four or five colours and use it everywhere. Give the page a real background, such as a gradient or a pattern drawn in code, never plain white.'
+  + '\n- Draw things properly: rounded shapes, shadows, highlights and gradients on a canvas or with CSS. Never use plain single-colour squares as the final art.'
+  + '\n- Add motion: smooth movement with requestAnimationFrame, easing, small particle or flash effects when something happens, and hover or press feedback on buttons.'
+  + '\n- Use clear, large text with a system font stack, a title, and visible score or status where it fits.'
+  + '\n- Games need a start screen, a game over screen with a restart button, and both keyboard and touch controls (on-screen buttons or swipes).'
+  + '\n- Size everything to the window: the app runs in a frame about 350 pixels wide on a phone. Use width 100% and scale the canvas to fit; nothing may be cut off or need sideways scrolling.'
+  + '\n- The code must be complete and run without errors. No placeholders, no "add your code here".'
+  + '\nWhen the user asks for a change or reports a bug, send the whole corrected document again.';
 const SEEHINT = '\n\nThe user can attach a photo with the camera button and you can then see and describe it.';
 const FINDHINT = '\n\nYou can find existing images on the web: the user writes "find images of ..." and they appear in the chat. You can open a coding language: the user writes "open Python" (or any language) or taps the code button, and you then code in it.';
 const GAMEHINT = '\n\nYou have two games the user can play in the chat: DOOM and Quake II. They start when the user writes "run DOOM" or "play Quake II"; tell them that if they ask what you can play.';
@@ -727,7 +748,7 @@ function isCoding(messages) {
   return talk.some(m => m.role === 'assistant' && /```html|<!doctype html/i.test(m.content));
 }
 async function ownChat(messages, signal, image) {
-  const r = await fetch('/api/chat', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(image ? { messages, task: 'vision', image } : { messages, task: isCoding(messages) ? 'code' : 'chat' }) });
+  const r = await fetch('/api/chat', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(image ? { messages, task: 'vision', image } : { messages, task: isCoding(messages) ? 'code' : 'chat', model: cfg.codeModel }) });
   if (!/json/i.test(r.headers.get('content-type') || '')) throw new Error('this site has no server code deployed');
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.text) throw new Error(j.error || 'answered ' + r.status);
@@ -1231,7 +1252,7 @@ $('#model').innerHTML = MODELS.map(m => `<option value="${m.id}">${m.label} (${m
 function showGroups() { $('#freeGroup').hidden = !$('#modeFree').checked; $('#ghGroup').hidden = !$('#modeGh').checked; $('#localGroup').hidden = !$('#modeLocal').checked; }
 function openSettings(mode) {
   const m = mode || cfg.mode; $('#modeFree').checked = m === 'free'; $('#modeGh').checked = m === 'github'; $('#modeLocal').checked = m === 'local';
-  $('#model').value = cfg.model; $('#ghToken').value = cfg.token; $('#ghModel').value = cfg.ghModel; $('#ghRemember').checked = cfg.remember;
+  $('#codeModel').value = cfg.codeModel; $('#model').value = cfg.model; $('#ghToken').value = cfg.token; $('#ghModel').value = cfg.ghModel; $('#ghRemember').checked = cfg.remember;
   showGroups(); dlg.showModal();
 }
 $('#modeGh').addEventListener('change', showGroups);
@@ -1249,6 +1270,7 @@ dlg.addEventListener('close', () => {
   cfg.token = $('#ghToken').value.trim();
   cfg.ghModel = $('#ghModel').value.trim() || 'openai/gpt-4.1-mini';
   cfg.remember = $('#ghRemember').checked;
+  cfg.codeModel = $('#codeModel').value || 'auto';
   saveCfg();
   if (engine && engineId !== cfg.model) { try { engine.exit(); } catch {} engine = null; engineId = ''; }
   refresh();

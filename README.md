@@ -8,7 +8,7 @@ A chat companion who lives on the chat bar.
 - **Photos:** the camera button attaches a photo and Belgo describes it with a vision model on Workers AI (Qwen 3.8 27B, then Gemma 4).
 - **Find images:** "find images of …" searches Wikimedia Commons, then Openverse, and shows the results with their sources.
 - **Coding languages:** "open Python" (or the code button) puts Belgo in one of 32 languages; requests then go to the coding model and code blocks get a copy button.
-- **Apps:** ask Belgo to build a game, tool or web page and it runs in a live preview inside the chat, in a locked-down frame. Building requests go to a coding model: Kimi K2.7 Code on a Workers Paid plan, otherwise Qwen 3.8 27B, then GLM-4.7 Flash, then gpt-oss.
+- **Apps:** ask Belgo to build a game, tool or web page and it runs in a live preview inside the chat, in a locked-down frame. Building requests go to a coding model: Kimi K2.7 Code on a Workers Paid plan, otherwise gpt-oss-120b, then GLM-4.7 Flash, then Qwen 3.8 27B. Settings has a picker to force one.
 - **Pictures:** Belgo's own server code (`functions/api/image.js`) paints with FLUX on Cloudflare Workers AI, with Z-Image-Turbo and FLUX.2 klein on public Hugging Face Spaces as backups.
 
 ## Website

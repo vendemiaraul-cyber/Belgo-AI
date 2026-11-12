@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Belgo</title>
+<link rel="icon" type="image/svg+xml" href="icons/face.svg">
+<link rel="apple-touch-icon" href="icons/app-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Belgo">
+<meta name="theme-color" content="#16140f">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Rubik:wght@400;500;600&display=swap">
 <style>
 /* Layout: one-screen chat. Quiet white page; the only colour is the flag figure who lives on the chat bar. */
@@ -48,6 +55,7 @@ h1{font:800 28px/1 var(--display);margin:0;letter-spacing:-.01em}
 .pill[data-k="busy"] i{background:var(--f-yellow);animation:blink 1s infinite}
 .pill[data-k="err"] i{background:var(--danger)}
 @keyframes blink{50%{opacity:.3}}
+.icon-btn+.icon-btn{margin-left:0}
 .icon-btn{margin-left:auto;flex:none;width:40px;height:40px;border:0;border-radius:50%;background:transparent;display:grid;place-items:center}
 .icon-btn:hover{background:var(--surface)}
 .icon-btn svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -216,20 +224,80 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .app.big iframe{height:72dvh}
 .app a.btn{text-decoration:none;color:inherit}
 .app pre{max-height:300px;overflow:auto;margin:0}
+/* ---------- refreshed UI ---------- */
+.brand{display:flex;align-items:center;gap:8px;min-width:0}
+.brand img{width:30px;height:30px;flex:none}
+.pill{transition:background .2s,color .2s}
+.icon-btn{transition:background .15s,transform .12s}
+.icon-btn:active,.btn:active,#send:active,#picBtn:active,#attachBtn:active{transform:scale(.93)}
+.btn{transition:transform .12s,background .15s}
+#send{transition:transform .12s,background .2s}
+#loadbar{flex:none;height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;opacity:0;transition:opacity .2s}
+#loadbar.on{opacity:1}
+#loadbar b{display:block;height:100%;width:45%;border-radius:99px;background:linear-gradient(90deg,var(--f-black) 0 33.4%,var(--f-yellow) 33.4% 66.7%,var(--f-red) 66.7%);animation:slide 1.15s cubic-bezier(.45,.05,.55,.95) infinite}
+@keyframes slide{from{transform:translateX(-110%)}to{transform:translateX(235%)}}
+.msg,.note,.ideas{animation:pop .24s cubic-bezier(.2,.8,.3,1.1) both}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.msg.user{box-shadow:0 1px 0 rgba(0,0,0,.08)}
+.msg.bot.typing{display:flex;gap:5px;align-items:center;padding:14px 16px}
+.msg.bot.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:dot 1s infinite}
+.msg.bot.typing i:nth-child(2){animation-delay:.15s}.msg.bot.typing i:nth-child(3){animation-delay:.3s}
+.ideas{align-self:stretch;display:flex;flex-direction:column;gap:10px;margin-top:auto}
+.ideas h2{font:800 24px/1.1 var(--display);margin:0;text-wrap:balance}
+.ideas div{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:9px 13px;font-size:14.5px;font-weight:500;text-align:left;transition:transform .12s,border-color .15s}
+.chip:hover{border-color:var(--ink)}
+.chip:active{transform:scale(.96)}
+.composer{transition:border-color .2s,box-shadow .2s}
+.composer:focus-within{box-shadow:0 0 0 3px color-mix(in srgb,var(--f-yellow) 55%,transparent)}
+#shortcut ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+#shortcut .shot{display:flex;align-items:center;gap:12px}
+#shortcut .shot img{width:60px;height:60px;border-radius:14px;flex:none}
+/* smoother figure: parts ease back to rest when an animation ends */
+#peg .part,#pBody,#pUpper{transition:transform .28s cubic-bezier(.3,.7,.4,1)}
+#peg[data-s="dance"] #pBody{animation:sway .5s ease-in-out infinite alternate}
+#peg[data-s="dance"] #pArmL{animation:danceL .5s ease-in-out infinite alternate}
+#peg[data-s="dance"] #pArmR{animation:danceR .5s ease-in-out infinite alternate}
+#peg[data-s="dance"] #pLegL{animation:tap .25s ease-in-out infinite alternate}
+#peg[data-s="dance"] #pHead{animation:rock .5s ease-in-out infinite alternate}
+@keyframes sway{from{transform:translateX(-4px) rotate(-5deg)}to{transform:translateX(4px) rotate(5deg)}}
+@keyframes danceL{from{transform:rotate(150deg)}to{transform:rotate(60deg)}}
+@keyframes danceR{from{transform:rotate(-60deg)}to{transform:rotate(-150deg)}}
+#peg[data-s="stretch"] #pArmL{transform:rotate(168deg)}
+#peg[data-s="stretch"] #pArmR{transform:rotate(-168deg)}
+#peg[data-s="stretch"] #pUpper{animation:reach 1.6s ease-in-out}
+@keyframes reach{40%,70%{transform:translateY(-5px) scaleY(1.04)}}
+#peg[data-s="nod"] #pHead{animation:nod .3s ease-in-out 3 alternate}
+@keyframes nod{to{transform:translateY(5px) rotate(4deg)}}
+@media (prefers-reduced-motion:reduce){.msg,.note,.ideas,#loadbar b{animation:none!important}}
 @media (prefers-reduced-motion:reduce){#peg *,#peg{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <h1>Belgo</h1>
+    <div class="brand"><img src="icons/face.svg" alt=""><h1>Belgo</h1></div>
     <span class="pill" id="status" data-k="idle"><i></i><span id="statusText">Asleep</span></span>
+    <button class="icon-btn" id="openShortcut" aria-label="Add Belgo to your home screen" title="Add Belgo to your home screen">
+      <svg viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M6 12H5v8h14v-8h-1"/></svg>
+    </button>
     <button class="icon-btn" id="openSettings" aria-label="Settings">
       <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
     </button>
   </header>
 
+  <div id="loadbar" role="progressbar" aria-label="Belgo is working" aria-hidden="true"><b></b></div>
+
   <main id="log" aria-live="polite">
+    <section class="ideas" id="ideas" hidden>
+      <h2>What should we do?</h2>
+      <div>
+        <button class="chip" type="button">Code me a snake game</button>
+        <button class="chip" type="button">Run DOOM</button>
+        <button class="chip" type="button">Paint a fox in the snow</button>
+        <button class="chip" type="button">What can you do?</button>
+      </div>
+    </section>
     <section class="setup" id="setup">
       <h2>Hi, I'm Belgo. I live on your chat bar.</h2>
       <p id="setupText">The brain you picked is not ready yet. The free online brain works straight away with no key and no download.</p>
@@ -290,6 +358,19 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     <p class="credits">Inspired by Capri · Runs on <a href="https://developers.cloudflare.com/workers-ai/" target="_blank" rel="noopener">Cloudflare Workers AI</a></p>
   </div>
 </div>
+
+<dialog id="shortcut" aria-labelledby="scTitle">
+  <form class="sheet" method="dialog">
+    <h2 id="scTitle">Put Belgo on your home screen</h2>
+    <div class="shot"><img src="icons/app-180.png" alt="Belgo's shortcut icon"><p class="hint" id="scLead">Belgo then opens like an app, with this icon.</p></div>
+    <ol id="scSteps"></ol>
+    <div class="row">
+      <button class="btn primary" type="button" id="scShare">Share Belgo</button>
+      <button class="btn" value="cancel">Close</button>
+    </div>
+    <p class="hint" id="scMsg"></p>
+  </form>
+</dialog>
 
 <dialog id="settings" aria-labelledby="setTitle">
   <form class="sheet" method="dialog" id="settingsForm">
@@ -397,9 +478,11 @@ const Peg = (() => {
     if (base === 'idle' && !temp) {
       if (Date.now() - lastAct > 75000) { temp = 'sleep'; apply(); return; }
       const r = Math.random();
-      if (r < .5) walkTo(8 + Math.random() * (maxX() - 8));
-      else if (r < .66) flash('wave', 1700);
-      else if (r < .88) flash('sit', 6500);
+      if (r < .42) walkTo(8 + Math.random() * (maxX() - 8));
+      else if (r < .55) flash('wave', 1700);
+      else if (r < .72) flash('sit', 6500);
+      else if (r < .82) flash('stretch', 1600);
+      else if (r < .92) flash('dance', 2600);
       else flash('peek', 1500);
     }
     schedule();
@@ -455,6 +538,8 @@ function refresh() {
     if (ready) setStatus('ready', onFree() ? (ownBrain ? 'Own AI · ' + ownBrain : 'Online') : onGh() ? 'GitHub · ' + cfg.ghModel.split('/').pop() : 'On device · ' + ((MODELS.find(m => m.id === engineId) || modelInfo()).label));
     else setStatus('idle', 'Asleep');
   }
+  $('#loadbar').classList.toggle('on', busy || loading || painting);
+  $('#ideas').hidden = !ready || busy || history.length > 0 || !!log.querySelector('.msg');
   input.placeholder = ready ? 'Message Belgo' : (loading ? 'Belgo is loading…' : 'Wake Belgo up first');
   sendBtn.disabled = !busy && !(pendingImg || (ready && input.value.trim()));
   $('#attachBtn').disabled = busy;
@@ -855,11 +940,13 @@ async function runGame(game) {
   Peg.setBase('idle'); Peg.hello();
 }
 let lastBubble = null;
+const clearTyping = () => log.querySelectorAll('.typing').forEach(n => n.remove());
+function showTyping() { clearTyping(); const t = add('msg bot typing', ''); t.append(document.createElement('i'), document.createElement('i'), document.createElement('i')); t.setAttribute('aria-label', 'Belgo is thinking'); }
 async function streamOne(messages) {
   let out = '', bubble = null;
   const gen = onFree() ? freeStream(messages) : onGh() ? githubStream(messages) : localStream(messages);
   for await (const t of gen) {
-    if (!bubble) { bubble = lastBubble = add('msg bot', ''); Peg.setBase('talk'); setStatus('busy', 'Answering'); }
+    if (!bubble) { clearTyping(); bubble = lastBubble = add('msg bot', ''); Peg.setBase('talk'); setStatus('busy', 'Answering'); }
     out += t;
     const stick = nearBottom();
     bubble.innerHTML = md(out);
@@ -905,19 +992,19 @@ async function lookAt(text) {
   mine.append(thumb, document.createTextNode(ask)); log.scrollTop = log.scrollHeight;
   history.push({ role: 'user', content: ask + ' [The user attached a photo.]' });
   busy = true; stopped = false; refresh();
-  setStatus('busy', 'Looking'); Peg.setBase('peek');
+  setStatus('busy', 'Looking'); Peg.setBase('peek'); showTyping();
   aborter = new AbortController();
   try {
     if (!hosted) throw new Error('this only works on the deployed site');
     const j = await ownChat([{ role: 'system', content: SYSTEM }, ...history.slice(-6, -1), { role: 'user', content: ask }], aborter.signal, image);
-    ownBrain = j.model || ownBrain;
+    ownBrain = j.model || ownBrain; clearTyping();
     add('msg bot', '').innerHTML = md(j.text); log.scrollTop = log.scrollHeight;
     history.push({ role: 'assistant', content: j.text });
   } catch (e) {
     history.pop();
     if (e?.name !== 'AbortError') { note('Belgo could not look at the photo: ' + (e?.message || e), true); setTimeout(() => Peg.flash('shrug', 1400), 0); }
   }
-  busy = false; aborter = null; Peg.setBase('idle'); refresh();
+  clearTyping(); busy = false; aborter = null; Peg.setBase('idle'); refresh();
 }
 async function send() {
   if (pendingImg && !busy) return lookAt(input.value.trim());
@@ -938,9 +1025,11 @@ async function send() {
   busy = true; stopped = false; refresh();
   let out = '';
   try {
-    setStatus('busy', 'Thinking'); Peg.setBase('think'); lastBubble = null;
+    setStatus('busy', 'Thinking'); Peg.setBase('think'); lastBubble = null; showTyping();
     out = await streamOne([{ role: 'system', content: SYSTEM + GAMEHINT + SEEHINT + Pic.prompt + (onFree() || onGh() ? BUILD : '') }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
-    if (out && showApp(lastBubble, out)) Peg.hello();
+    clearTyping();
+    if (out && showApp(lastBubble, out)) setTimeout(() => Peg.flash('dance', 2400), 50);
+    else if (out) setTimeout(() => Peg.flash('nod', 950), 50);
     const pic = /\[\[\s*image\s*:\s*([^\]]+)\]\]/i.exec(out);
     if (pic && !stopped) { setStatus('busy', 'Painting'); Peg.setBase('think'); await paint(pic[1]); }
     if (out) history.push({ role: 'assistant', content: out });
@@ -952,7 +1041,7 @@ async function send() {
       setTimeout(() => Peg.flash('shrug', 1400), 0);
     }
   }
-  busy = false; aborter = null; Peg.setBase('idle'); refresh();
+  clearTyping(); busy = false; aborter = null; Peg.setBase('idle'); refresh();
 }
 function stop() {
   stopped = true;
@@ -1011,6 +1100,32 @@ dlg.addEventListener('close', () => {
     else if (!wasReady || before !== cfg.mode + cfg.ghModel) { note('Belgo is awake and answers through GitHub Models (' + cfg.ghModel + ').'); Peg.hello(); }
   } else if (!engine) { note('Belgo needs to download ' + modelInfo().label + ' before answering.'); $('#setup').hidden = false; }
 });
+document.querySelectorAll('#ideas .chip').forEach(c => c.addEventListener('click', () => { input.value = c.textContent; send(); }));
+
+/* Home screen shortcut: Android can install directly; on iPhone the person adds it from Safari's own Share menu. */
+let installEvent = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvent = e; });
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+if (standalone) $('#openShortcut').hidden = true;
+$('#openShortcut').addEventListener('click', async () => {
+  if (installEvent) { installEvent.prompt(); installEvent = null; return; }
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const steps = ios
+    ? ['Open Belgo in Safari if you are in another app.', 'Tap the Share button in Safari\'s toolbar (the square with an arrow pointing up).', 'Scroll down and tap "Add to Home Screen".', 'Tap Add. Belgo appears on your home screen with this icon.']
+    : ['Open your browser\'s menu (the three dots).', 'Choose "Add to Home screen" or "Install app".', 'Confirm. Belgo appears with this icon.'];
+  $('#scSteps').innerHTML = steps.map(t => '<li>' + esc(t) + '</li>').join('');
+  $('#scMsg').textContent = '';
+  $('#shortcut').showModal();
+});
+$('#shortcut').addEventListener('click', e => { if (e.target === $('#shortcut')) $('#shortcut').close(); });
+$('#scShare').addEventListener('click', async () => {
+  const url = location.href.split('#')[0];
+  try {
+    if (navigator.share) await navigator.share({ title: 'Belgo', text: 'Chat with Belgo', url });
+    else { await navigator.clipboard.writeText(url); $('#scMsg').textContent = 'Link copied.'; }
+  } catch (e) { if (e?.name !== 'AbortError') $('#scMsg').textContent = 'Copy this link: ' + url; }
+});
+
 $('#clearChat').addEventListener('click', () => {
   history = [];
   log.querySelectorAll('.msg,.note').forEach(n => n.remove());
@@ -1018,7 +1133,7 @@ $('#clearChat').addEventListener('click', () => {
 });
 
 refresh();
-if (onFree()) note('Belgo is awake. Say hello.');
+
 </script>
 </body>
 </html>

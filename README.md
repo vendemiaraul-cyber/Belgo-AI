@@ -16,6 +16,10 @@ A chat companion who lives on the chat bar.
 
 `index.html` is the front page ("Presenting Belgo"), with what he does and YouTube videos by other people showing the models he uses. `chat.html` is the chat itself, at `/chat`; the home screen shortcut opens it.
 
+## Easter egg
+
+Scrolling to the very bottom of the front page opens `useless.html`, a list of famously useless GitHub projects. It triggers once per visit.
+
 ## Intruders
 
 `guard.js` checks the address for break-in attempts (hidden files, admin pages, script or database code in the link) and sends them to `caught.html`, where Belgo gives them the L and names the cause. `404.html` runs the same check for missing pages. It is a deterrent, not a security system.

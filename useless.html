@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="guard.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>The most useless GitHubs</title>
+<link rel="icon" type="image/svg+xml" href="icons/face.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Rubik:wght@400;500;600&display=swap">
+<style>
+/* Layout: a trophy shelf. One ranked column of projects that work perfectly and achieve nothing. */
+:root{ --bg:#ffffff; --surface:#f2f2ef; --line:#d9d9d3; --ink:#16140f; --muted:#62605a; --yellow:#fdda24; --red:#ef3340;
+  --display:"Baloo 2","Rubik",system-ui,sans-serif; --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; color-scheme:light }
+@media (prefers-color-scheme:dark){ :root{ --bg:#121110; --surface:#1f1e1b; --line:#37352f; --ink:#f3f1ea; --muted:#a6a297; color-scheme:dark } }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 var(--body)}
+.wrap{max-width:760px;margin:0 auto;padding:clamp(36px,8vw,72px) max(20px,env(safe-area-inset-right,0px)) 56px max(20px,env(safe-area-inset-left,0px))}
+.found{display:inline-block;font-size:13px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;background:var(--yellow);color:#16140f;border-radius:8px;padding:5px 10px}
+h1{font:800 clamp(40px,9vw,76px)/1 var(--display);margin:14px 0 0;text-wrap:balance}
+.lead{margin:16px 0 0;max-width:46ch;color:var(--muted)}
+ol{list-style:none;margin:34px 0 0;padding:0;counter-reset:rank}
+li{counter-increment:rank;display:grid;grid-template-columns:auto 1fr;gap:4px 18px;padding:20px 0;border-top:1.5px solid var(--line)}
+li::before{content:counter(rank);grid-row:1 / span 3;font:800 40px/1 var(--display);color:var(--red);min-width:1.3em;font-variant-numeric:tabular-nums}
+h2{font:800 23px/1.15 var(--display);margin:0}
+li p{margin:0;max-width:52ch}
+li a{font:13.5px var(--mono);color:var(--muted);overflow-wrap:anywhere}
+.back{display:inline-block;margin-top:34px;border:1.5px solid #16140f;background:var(--yellow);color:#16140f;border-radius:99px;padding:12px 22px;font-weight:600;text-decoration:none}
+small{display:block;margin-top:22px;color:var(--muted);font-size:13.5px;max-width:60ch}
+:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="found">You found the secret page</span>
+  <h1>The most useless GitHubs</h1>
+  <p class="lead">You scrolled all the way down, so here is your reward: real projects that work exactly as intended and help nobody.</p>
+  <ol>
+    <li><h2>nocode</h2><p>A project with no code at all. Its pitch is that the safest, most reliable app is the one you never write.</p><a href="https://github.com/kelseyhightower/nocode" target="_blank" rel="noopener">github.com/kelseyhightower/nocode</a></li>
+    <li><h2>FizzBuzz Enterprise Edition</h2><p>The beginner exercise FizzBuzz, rebuilt as serious business software with factories, strategies and far too many files.</p><a href="https://github.com/EnterpriseQualityCoding/FizzBuzzEnterpriseEdition" target="_blank" rel="noopener">github.com/EnterpriseQualityCoding/FizzBuzzEnterpriseEdition</a></li>
+    <li><h2>is-thirteen</h2><p>Tells you whether a number is 13. It knows a surprising number of ways to write 13.</p><a href="https://github.com/jezen/is-thirteen" target="_blank" rel="noopener">github.com/jezen/is-thirteen</a></li>
+    <li><h2>volkswagen</h2><p>Notices when your code is being tested by a build server and makes every failing test pass.</p><a href="https://github.com/auchenberg/volkswagen" target="_blank" rel="noopener">github.com/auchenberg/volkswagen</a></li>
+    <li><h2>not-paid</h2><p>Makes a client's website fade a little more each day until the invoice is paid.</p><a href="https://github.com/kleampa/not-paid" target="_blank" rel="noopener">github.com/kleampa/not-paid</a></li>
+    <li><h2>illacceptanything</h2><p>A repository that accepts any change anyone sends. It contains exactly what you would expect.</p><a href="https://github.com/illacceptanything/illacceptanything" target="_blank" rel="noopener">github.com/illacceptanything/illacceptanything</a></li>
+    <li><h2>vigil</h2><p>A programming language that punishes code for breaking its promises by deleting it.</p><a href="https://github.com/munificent/vigil" target="_blank" rel="noopener">github.com/munificent/vigil</a></li>
+    <li><h2>rockstar</h2><p>Fills your GitHub activity chart with a year of fake work so you look like a rockstar programmer.</p><a href="https://github.com/avinassh/rockstar" target="_blank" rel="noopener">github.com/avinassh/rockstar</a></li>
+    <li><h2>DreamBerd</h2><p>The "perfect" programming language, described in great detail and designed to be impossible to use.</p><a href="https://github.com/TodePond/DreamBerd" target="_blank" rel="noopener">github.com/TodePond/DreamBerd</a></li>
+  </ol>
+  <a class="back" href="./">Back to Belgo</a>
+  <small>Ranking by Belgo, who has no qualifications. Every project belongs to its authors on GitHub, and several are funnier than they are useless.</small>
+</div>
+</body>
+</html>

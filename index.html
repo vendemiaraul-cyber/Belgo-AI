@@ -190,6 +190,21 @@ document.querySelectorAll('.player').forEach(function (b) {
     b.classList.add('on'); b.style.backgroundImage = 'none'; b.append(f);
   });
 });
+
+/* Easter egg: reaching the very bottom of the page opens the secret page, once per visit,
+   so the back button does not send you straight there again. */
+(function () {
+  var armed = false, gone = false;
+  try { gone = sessionStorage.getItem('belgo.egg') === '1'; } catch (e) {}
+  addEventListener('scroll', function () {
+    var bottom = innerHeight + scrollY >= document.documentElement.scrollHeight - 2;
+    if (!bottom) { armed = true; return; }
+    if (gone || !armed) return;
+    gone = true;
+    try { sessionStorage.setItem('belgo.egg', '1'); } catch (e) {}
+    location.href = 'useless.html';
+  }, { passive: true });
+})();
 </script>
 </body>
 </html>

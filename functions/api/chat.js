@@ -27,12 +27,12 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch { return json({ error: 'Bad request.' }, 400); }
   const messages = (Array.isArray(body?.messages) ? body.messages : [])
     .filter(m => ['system', 'user', 'assistant'].includes(m?.role) && typeof m.content === 'string')
-    .slice(-20).map(m => ({ role: m.role, content: m.content.slice(0, 8000) }));
+    .slice(-20).map(m => ({ role: m.role, content: m.content.slice(0, 30000) }));
   if (!messages.some(m => m.role === 'user')) return json({ error: 'No message.' }, 400);
 
   let last = '';
   for (const model of MODELS) {
-    for (const input of [{ messages, max_tokens: 1024 }, { input: messages }]) {
+    for (const input of [{ messages, max_tokens: 6000 }, { input: messages }]) {
       try {
         const text = pick(await env.AI.run(model, input)).trim();
         if (text) return json({ text, model: model.split('/').pop() });

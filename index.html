@@ -198,6 +198,15 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .msg.pic{padding:6px;display:flex;flex-direction:column;gap:6px}
 .msg.pic img{display:block;width:100%;max-width:384px;border-radius:13px}
 .msg.pic a,.msg.pic span{font-size:12.5px;color:var(--muted);padding:0 6px 2px}
+/* ---------- apps Belgo builds ---------- */
+.btn.sm{padding:6px 12px;font-size:13.5px}
+.msg.bot.has-app{max-width:100%;align-self:stretch}
+.app{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.app-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.app-bar strong{font:800 15px/1 var(--display);margin-right:auto}
+.app iframe{display:block;width:100%;height:380px;border:1.5px solid var(--outline);border-radius:10px;background:#fff}
+.app.big iframe{height:72dvh}
+.app pre{max-height:300px;overflow:auto;margin:0}
 @media (prefers-reduced-motion:reduce){#peg *,#peg{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -392,6 +401,7 @@ const Peg = (() => {
 })();
 
 /* ---------------- chat state and rendering ---------------- */
+const BUILD = '\n\nYou can build small web apps, games and tools that run right inside the chat. When the user asks you to build, make or code one, reply with one short sentence and then the complete app as a single HTML document inside one ```html code block. Put all CSS and JavaScript inline in that document. Do not load anything from other websites: no external scripts, fonts or images. Make it work with both mouse and touch, and fit a small screen. When the user asks for a change or reports a bug, send the whole corrected document again.';
 const SYSTEM = 'You are Belgo, a small cheerful figure painted in the black, yellow and red of the Belgian flag. You live on top of the chat bar. Be friendly, clear and concise. Reply in the language the user writes in.';
 const log = $('#log'), input = $('#input'), sendBtn = $('#send');
 let history = [], busy = false, loading = false, engine = null, engineId = '', aborter = null, stopLocal = false, stopped = false, painting = false;
@@ -741,11 +751,53 @@ async function paint(text) {
   return res;
 }
 
+/* Apps: when an answer holds an HTML document, run it in a locked-down frame inside the chat. */
+function findApp(out) {
+  const re = /```([a-zA-Z]*)[ \t]*\n([\s\S]*?)(```|$)/g;
+  let m;
+  while ((m = re.exec(out))) {
+    const lang = m[1].toLowerCase(), code = m[2].trim();
+    if ((lang === 'html' || lang === '') && /<!doctype html|<html[\s>]|<body[\s>]|<script[\s>]|<canvas[\s>]/i.test(code))
+      return { code, rest: (out.slice(0, m.index) + out.slice(m.index + m[0].length)).trim(), cut: m[3] === '' };
+  }
+  return null;
+}
+function showApp(bubble, out) {
+  const app = findApp(out);
+  if (!app || !bubble) return false;
+  bubble.classList.add('has-app');
+  bubble.innerHTML = md(app.rest || 'Here it is.');
+  const card = document.createElement('div'); card.className = 'app';
+  const bar = document.createElement('div'); bar.className = 'app-bar';
+  const title = document.createElement('strong'); title.textContent = 'Live preview';
+  const frame = document.createElement('iframe');
+  frame.setAttribute('sandbox', 'allow-scripts allow-pointer-lock');
+  frame.title = 'App built by Belgo';
+  const run = () => { frame.srcdoc = app.code; };
+  const pre = document.createElement('pre'), codeEl = document.createElement('code');
+  codeEl.textContent = app.code; pre.append(codeEl); pre.hidden = true;
+  const btn = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = label; b.addEventListener('click', () => fn(b)); return b; };
+  bar.append(title,
+    btn('Restart', run),
+    btn('Bigger', b => { b.textContent = card.classList.toggle('big') ? 'Smaller' : 'Bigger'; }),
+    btn('Code', b => { pre.hidden = !pre.hidden; b.textContent = pre.hidden ? 'Code' : 'Hide code'; }),
+    btn('Copy', async b => {
+      try { await navigator.clipboard.writeText(app.code); b.textContent = 'Copied'; }
+      catch { pre.hidden = false; getSelection().selectAllChildren(codeEl); b.textContent = 'Selected'; }
+      setTimeout(() => { b.textContent = 'Copy'; }, 1500);
+    }));
+  card.append(bar, frame, pre);
+  if (app.cut) { const warn = document.createElement('span'); warn.className = 'hint'; warn.textContent = 'The answer was cut off, so this app may be incomplete. Ask Belgo to make it shorter or to continue.'; card.append(warn); }
+  bubble.append(card); run();
+  log.scrollTop = log.scrollHeight;
+  return true;
+}
+let lastBubble = null;
 async function streamOne(messages) {
   let out = '', bubble = null;
   const gen = onFree() ? freeStream(messages) : onGh() ? githubStream(messages) : localStream(messages);
   for await (const t of gen) {
-    if (!bubble) { bubble = add('msg bot', ''); Peg.setBase('talk'); setStatus('busy', 'Answering'); }
+    if (!bubble) { bubble = lastBubble = add('msg bot', ''); Peg.setBase('talk'); setStatus('busy', 'Answering'); }
     out += t;
     const stick = nearBottom();
     bubble.innerHTML = md(out);
@@ -762,8 +814,9 @@ async function send() {
   busy = true; stopped = false; refresh();
   let out = '';
   try {
-    setStatus('busy', 'Thinking'); Peg.setBase('think');
-    out = await streamOne([{ role: 'system', content: SYSTEM + Pic.prompt }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
+    setStatus('busy', 'Thinking'); Peg.setBase('think'); lastBubble = null;
+    out = await streamOne([{ role: 'system', content: SYSTEM + Pic.prompt + (onFree() || onGh() ? BUILD : '') }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
+    if (out && showApp(lastBubble, out)) Peg.hello();
     const pic = /\[\[\s*image\s*:\s*([^\]]+)\]\]/i.exec(out);
     if (pic && !stopped) { setStatus('busy', 'Painting'); Peg.setBase('think'); await paint(pic[1]); }
     if (out) history.push({ role: 'assistant', content: out });

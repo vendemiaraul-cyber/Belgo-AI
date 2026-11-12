@@ -418,6 +418,10 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
       <label class="field"><span>Model for building apps and code</span>
         <select id="codeModel">
           <option value="auto">Automatic (best one available)</option>
+          <option value="gemini">Gemini (Google AI Studio), free key</option>
+          <option value="groq">Groq (Kimi, Qwen and others), free key</option>
+          <option value="openrouter">OpenRouter free models, free key</option>
+          <option value="nvidia">NVIDIA NIM (Kimi, Qwen Coder, GLM), free key</option>
           <option value="gpt-oss-120b">gpt-oss 120B (OpenAI), free</option>
           <option value="glm-4.7-flash">GLM-4.7 Flash (Z.ai), free</option>
           <option value="qwen3.8-27b">Qwen 3.8 27B (Alibaba), free</option>
@@ -425,7 +429,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
           <option value="kimi-k2.7-code">Kimi K2.7 Code (Moonshot AI), paid plan</option>
           <option value="glm-5.3-flash">GLM-5.3 Flash (Z.ai), paid plan</option>
         </select></label>
-      <p class="hint">The header shows which model answered. If the one you pick is not available, Belgo uses the next one. The two paid ones need Cloudflare's Workers Paid plan.</p>
+      <p class="hint">The header shows which model answered. If the one you pick is not available, Belgo uses the next one. The "free key" ones work after their key is stored as a secret on the Cloudflare project: GEMINI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY or NVIDIA_API_KEY. The two paid ones need Cloudflare's Workers Paid plan.</p>
     </div>
 
     <div class="group" id="ghGroup">

@@ -35,6 +35,44 @@ async function cerebras(key, messages, maxTokens, models) {
   return { error: last };
 }
 
+// Other free coding models. Each works once its free API key is stored as a secret on the Pages project.
+// The model is chosen from the provider's own live list, so retired model names do not break Belgo.
+const FREE_CODERS = {
+  gemini: { name: 'Gemini', key: 'GEMINI_API_KEY', base: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    ok: id => /gemini/.test(id) && !/lite|image|tts|embed|audio|live|vision|nano|8b/.test(id), prefer: [/gemini-[\d.]+-flash$/, /flash-latest/, /flash/] },
+  groq: { name: 'Groq', key: 'GROQ_API_KEY', base: 'https://api.groq.com/openai/v1',
+    ok: id => !/whisper|tts|guard|embed|safeguard/.test(id), prefer: [/kimi/, /coder/, /qwen/, /gpt-oss-120b/, /70b/] },
+  openrouter: { name: 'OpenRouter', key: 'OPENROUTER_API_KEY', base: 'https://openrouter.ai/api/v1',
+    ok: id => id.endsWith(':free'), prefer: [/coder/, /kimi/, /glm/, /deepseek/, /qwen/, /gpt-oss/] },
+  nvidia: { name: 'NVIDIA', key: 'NVIDIA_API_KEY', base: 'https://integrate.api.nvidia.com/v1',
+    ok: id => !/embed|rerank|guard|vision|ocr|tts|asr/.test(id), prefer: [/kimi/, /qwen.*coder/, /glm/, /deepseek/, /devstral|codestral/] },
+};
+const modelCache = {};
+async function freeCoder(id, env, messages) {
+  const p = FREE_CODERS[id], key = env[p.key];
+  if (!key) return { error: p.name + ' has no key set (' + p.key + ').' };
+  const headers = { 'content-type': 'application/json', authorization: 'Bearer ' + key };
+  try {
+    if (!modelCache[id]) {
+      const r = await fetch(p.base + '/models', { headers });
+      if (!r.ok) return { error: p.name + ' ' + r.status + ' when listing models. Check the key.' };
+      const ids = ((await r.json()).data || []).map(m => String(m.id)).filter(p.ok);
+      const ranked = p.prefer.flatMap(re => ids.filter(m => re.test(m)).sort().reverse());
+      modelCache[id] = [...new Set([...ranked, ...ids])].slice(0, 3);
+    }
+    let last = p.name + ' lists no usable model.';
+    for (const model of modelCache[id]) {
+      const r = await fetch(p.base + '/chat/completions', { method: 'POST', headers, body: JSON.stringify({ model, messages, max_tokens: 16000 }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { last = p.name + ' ' + r.status + ': ' + (j.error?.message || j.message || ''); continue; }
+      const text = String(j.choices?.[0]?.message?.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+      if (text) return { text, model: p.name + ' ' + model.replace(/^models\//, '').replace(/:free$/, '') };
+      last = p.name + ' ' + model + ' gave an empty answer';
+    }
+    return { error: last };
+  } catch (e) { return { error: p.name + ': ' + (e?.message || e) }; }
+}
+
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 
 // Workers AI answers in different shapes depending on the model, so read all of them.
@@ -86,6 +124,14 @@ export async function onRequestPost({ request, env }) {
   }
 
   const picked = coding && CODE_CHOICES[body.model] || '';
+  // App building: a free coding provider answers first. The picked one, or on Automatic every one that has a key.
+  if (coding && !picked) {
+    for (const id of FREE_CODERS[body.model] ? [body.model] : Object.keys(FREE_CODERS).filter(k => env[FREE_CODERS[k].key])) {
+      const r = await freeCoder(id, env, messages);
+      if (r.text) return json(r);
+      last = r.error;
+    }
+  }
   if (env.CEREBRAS_API_KEY) {
     const want = coding && picked ? (CEREBRAS_HAS[body.model] ? [CEREBRAS_HAS[body.model]] : []) : coding ? CEREBRAS_CODE : CEREBRAS_CHAT;
     const r = want.length ? await cerebras(env.CEREBRAS_API_KEY, messages, coding ? 16000 : 2000, want) : { error: '' };

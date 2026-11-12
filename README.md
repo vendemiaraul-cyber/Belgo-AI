@@ -3,8 +3,9 @@
 A chat companion who lives on the chat bar.
 
 - **Brain:** Belgo's own server code (`functions/api/chat.js`) runs gpt-oss on Cloudflare Workers AI, with the free Pollinations text service as a backup. GitHub Models and an on-device model (wllama) are optional in settings.
-- **Text:** if the secret `CEREBRAS_API_KEY` is set on the Pages project, answers come from Cerebras (Qwen 3.8 27B, then gpt-oss-120b) before Cloudflare Workers AI.
-- **Games:** write "run DOOM" or "play Quake II". DOOM (shareware) is in `games/doom`; Quake II opens the Qwasm2 site inside the chat.
+- **Text:** if the secret `CEREBRAS_API_KEY` is set on the Pages project, answers come from Cerebras (gpt-oss-120b for chat, Qwen 3.8 27B for building apps) before Cloudflare Workers AI.
+- **Games:** write "run DOOM" or "play Quake II". DOOM (shareware) is in `games/doom`; Quake II opens the Qwasm2 site. Games run inside the chat bar.
+- **Photos:** the camera button attaches a photo and Belgo describes it with a vision model on Workers AI (Qwen 3.8 27B, then Gemma 4).
 - **Apps:** ask Belgo to build a game, tool or web page and it runs in a live preview inside the chat, in a locked-down frame. Building requests go to a coding model: Kimi K2.7 Code on a Workers Paid plan, otherwise Qwen 3.8 27B, then GLM-4.7 Flash, then gpt-oss.
 - **Pictures:** Belgo's own server code (`functions/api/image.js`) paints with FLUX on Cloudflare Workers AI, with Z-Image-Turbo and FLUX.2 klein on public Hugging Face Spaces as backups.
 

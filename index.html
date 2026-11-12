@@ -160,7 +160,7 @@ h1{font:800 28px/1 var(--display);margin:0;letter-spacing:-.01em}
 #peg[data-s="sleep"] .zz{display:block;animation:zz 2.6s ease-in-out infinite}
 @keyframes zz{from{opacity:0;transform:translate(-50%,6px) scale(.7)}40%{opacity:1}to{opacity:0;transform:translate(10%,-18px) scale(1.2)}}
 
-.composer{display:flex;align-items:flex-end;gap:8px;border:1.5px solid var(--outline);border-radius:22px;background:var(--bg);padding:6px 6px 6px 16px}
+.composer{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;border:1.5px solid var(--outline);border-radius:22px;background:var(--bg);padding:6px 6px 6px 16px}
 .composer:focus-within{border-color:var(--ink)}
 #input{flex:1;min-width:0;border:0;outline:0;background:transparent;resize:none;padding:8px 0;max-height:140px;line-height:1.4}
 #input::placeholder{color:var(--muted)}
@@ -191,10 +191,18 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .sheet .credits-box{border-top:1.5px solid var(--line);padding-top:14px;font-size:14px}
 .credits-box p{margin:4px 0 0}
 
-#picBtn{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center}
-#picBtn:hover{background:var(--surface)}
-#picBtn svg{width:21px;height:21px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-#picBtn:disabled{opacity:.4;cursor:default}
+#picBtn,#attachBtn{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center}
+#picBtn:hover,#attachBtn:hover{background:var(--surface)}
+#picBtn svg,#attachBtn svg{width:21px;height:21px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#picBtn:disabled,#attachBtn:disabled{opacity:.4;cursor:default}
+/* game and attached photo live inside the chat bar */
+#barGame{flex:0 0 100%;margin:4px 4px 0 -6px;display:flex;flex-direction:column;gap:6px;min-width:0}
+#barGame iframe{display:block;width:100%;height:400px;max-height:56dvh;border:0;border-radius:14px;background:#000}
+#barGame.big iframe{height:72dvh;max-height:72dvh}
+#barGame a.btn{text-decoration:none;color:inherit}
+#attach{flex:0 0 100%;display:flex;align-items:center;gap:8px;margin-left:-6px;font-size:13px;color:var(--muted)}
+#attach img{width:52px;height:52px;object-fit:cover;border-radius:10px;border:1.5px solid var(--line)}
+.msg.user img{display:block;max-width:220px;width:100%;border-radius:12px;margin-bottom:6px}
 .msg.pic{padding:6px;display:flex;flex-direction:column;gap:6px}
 .msg.pic img{display:block;width:100%;max-width:384px;border-radius:13px}
 .msg.pic a,.msg.pic span{font-size:12.5px;color:var(--muted);padding:0 6px 2px}
@@ -206,8 +214,6 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .app-bar strong{font:800 15px/1 var(--display);margin-right:auto}
 .app iframe{display:block;width:100%;height:380px;border:1.5px solid var(--outline);border-radius:10px;background:#fff}
 .app.big iframe{height:72dvh}
-.app.game iframe{height:470px;background:#000}
-.app.game.big iframe{height:82dvh}
 .app a.btn{text-decoration:none;color:inherit}
 .app pre{max-height:300px;overflow:auto;margin:0}
 @media (prefers-reduced-motion:reduce){#peg *,#peg{animation:none!important;transition:none!important}}
@@ -267,7 +273,13 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
       </div>
     </div>
     <form class="composer" id="form">
+      <div id="barGame" hidden></div>
+      <div id="attach" hidden><img id="attachImg" alt="Attached photo"><span>Photo attached. Ask about it, or just send.</span><button class="btn sm" type="button" id="attachDrop">Remove</button></div>
       <textarea id="input" rows="1" placeholder="Wake Belgo up first" aria-label="Message"></textarea>
+      <button id="attachBtn" type="button" aria-label="Attach a photo for Belgo to look at" title="Attach a photo for Belgo to look at">
+        <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      </button>
+      <input type="file" id="attachFile" accept="image/*" hidden>
       <button id="picBtn" type="button" aria-label="Paint a picture from this text" title="Paint a picture from this text">
         <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>
       </button>
@@ -315,7 +327,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
       <h3>Credits</h3>
       <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
       <p>Belgo's own AI runs <a href="https://developers.cloudflare.com/workers-ai/models/gpt-oss-120b/" target="_blank" rel="noopener">gpt-oss</a> by OpenAI and FLUX by Black Forest Labs on Cloudflare Workers AI. Apps are written by Qwen 3.8 (Alibaba) or GLM-4.7 Flash (Z.ai), or Kimi K2.7 Code (Moonshot AI) on a paid Cloudflare plan.</p>
-      <p>Text answers come from <a href="https://cloud.cerebras.ai" target="_blank" rel="noopener">Cerebras</a> (Qwen 3.8) when its key is set.</p>
+      <p>Text answers come from <a href="https://cloud.cerebras.ai" target="_blank" rel="noopener">Cerebras</a> (gpt-oss, then Qwen 3.8) when its key is set. Photos are read by Qwen 3.8 or Gemma 4 on Workers AI.</p>
       <p>DOOM runs on the <a href="https://github.com/diekmann/wasm-fizzbuzz" target="_blank" rel="noopener">wasm port by Cornelius Diekmann</a> (GPL source, id Software shareware data). Quake II runs on <a href="https://github.com/GMH-Code/Quake2-WASM" target="_blank" rel="noopener">Qwasm2 by GMH-Code</a>, with id Software's demo.</p>
       <p>Backup answers come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>; the GitHub option uses <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>.</p>
       <p>On-device answers run on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> by Xuan Son Nguyen, built on llama.cpp.</p>
@@ -407,10 +419,11 @@ const Peg = (() => {
 
 /* ---------------- chat state and rendering ---------------- */
 const BUILD = '\n\nYou can build small web apps, games and tools that run right inside the chat. When the user asks you to build, make or code one, reply with one short sentence and then the complete app as a single HTML document inside one ```html code block. Put all CSS and JavaScript inline in that document. Do not load anything from other websites: no external scripts, fonts or images. Make it work with both mouse and touch, and fit a small screen. When the user asks for a change or reports a bug, send the whole corrected document again.';
+const SEEHINT = '\n\nThe user can attach a photo with the camera button and you can then see and describe it.';
 const GAMEHINT = '\n\nYou have two games the user can play in the chat: DOOM and Quake II. They start when the user writes "run DOOM" or "play Quake II"; tell them that if they ask what you can play.';
 const SYSTEM = 'You are Belgo, a small cheerful figure painted in the black, yellow and red of the Belgian flag. You live on top of the chat bar. Be friendly, clear and concise. Reply in the language the user writes in.';
 const log = $('#log'), input = $('#input'), sendBtn = $('#send');
-let history = [], busy = false, loading = false, engine = null, engineId = '', aborter = null, stopLocal = false, stopped = false, painting = false;
+let history = [], busy = false, loading = false, engine = null, engineId = '', aborter = null, stopLocal = false, stopped = false, painting = false, pendingImg = '';
 
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function inline(s) {
@@ -443,7 +456,8 @@ function refresh() {
     else setStatus('idle', 'Asleep');
   }
   input.placeholder = ready ? 'Message Belgo' : (loading ? 'Belgo is loading…' : 'Wake Belgo up first');
-  sendBtn.disabled = !busy && (!ready || !input.value.trim());
+  sendBtn.disabled = !busy && !(pendingImg || (ready && input.value.trim()));
+  $('#attachBtn').disabled = busy;
   $('#picBtn').disabled = busy || painting || !input.value.trim();
   if (busy) { sendBtn.dataset.stop = ''; sendBtn.setAttribute('aria-label', 'Stop'); $('#sendIcon').innerHTML = '<rect x="7" y="7" width="10" height="10" rx="2"/>'; }
   else { delete sendBtn.dataset.stop; sendBtn.setAttribute('aria-label', 'Send'); $('#sendIcon').innerHTML = '<path d="M12 19V5M6 11l6-6 6 6"/>'; }
@@ -592,8 +606,8 @@ function isCoding(messages) {
   if (/\b(build|code|program|script|game|app|website|web ?page|html|css|javascript|calculator|bug|fix)\b/i.test(last)) return true;
   return talk.some(m => m.role === 'assistant' && /```html|<!doctype html/i.test(m.content));
 }
-async function ownChat(messages, signal) {
-  const r = await fetch('/api/chat', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages, task: isCoding(messages) ? 'code' : 'chat' }) });
+async function ownChat(messages, signal, image) {
+  const r = await fetch('/api/chat', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(image ? { messages, task: 'vision', image } : { messages, task: isCoding(messages) ? 'code' : 'chat' }) });
   if (!/json/i.test(r.headers.get('content-type') || '')) throw new Error('this site has no server code deployed');
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.text) throw new Error(j.error || 'answered ' + r.status);
@@ -819,9 +833,9 @@ function wantsGame(text) {
 }
 async function runGame(game) {
   Peg.setBase('load'); Peg.progress(0); $('#liftText').textContent = '…';
-  const bubble = add('msg bot has-app', 'Running ' + game.name + '…');
+  const bubble = add('msg bot', 'Running ' + game.name + '…');
   await sleep(900);
-  const card = document.createElement('div'); card.className = 'app game';
+  const host = $('#barGame'); host.textContent = ''; host.classList.remove('big');
   const bar = document.createElement('div'); bar.className = 'app-bar';
   const title = document.createElement('strong'); title.textContent = game.name;
   const frame = document.createElement('iframe');
@@ -831,12 +845,11 @@ async function runGame(game) {
   const link = document.createElement('a'); link.className = 'btn sm'; link.href = game.src; link.target = '_blank'; link.rel = 'noopener'; link.textContent = 'New tab';
   bar.append(title,
     btn('Restart', () => { frame.src = game.src; }),
-    btn('Bigger', b => { b.textContent = card.classList.toggle('big') ? 'Smaller' : 'Bigger'; }),
+    btn('Bigger', b => { b.textContent = host.classList.toggle('big') ? 'Smaller' : 'Bigger'; }),
     link,
-    btn('Close', () => { card.remove(); bubble.classList.remove('has-app'); bubble.textContent = game.name + ' closed.'; }));
-  const credit = document.createElement('span'); credit.className = 'hint'; credit.textContent = game.credit;
-  card.append(bar, frame, credit);
-  bubble.append(card);
+    btn('Close', () => { host.textContent = ''; host.hidden = true; note(game.name + ' closed.'); }));
+  host.append(bar, frame); host.hidden = false;
+  bubble.textContent = game.name + ' is running in the chat bar. ' + game.credit;
   log.scrollTop = log.scrollHeight;
   Peg.setBase('idle'); Peg.hello();
 }
@@ -853,7 +866,60 @@ async function streamOne(messages) {
   }
   return out;
 }
+/* Photos: shrink on the device, then Belgo's own vision model answers. */
+function shrink(file) {
+  return new Promise((ok, no) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 1024 / Math.max(im.naturalWidth, im.naturalHeight));
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(im.naturalWidth * k)); cv.height = Math.max(1, Math.round(im.naturalHeight * k));
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(url);
+      ok(cv.toDataURL('image/jpeg', 0.85));
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); no(new Error('That file could not be opened as a picture.')); };
+    im.src = url;
+  });
+}
+function setAttach(data) {
+  pendingImg = data || '';
+  $('#attach').hidden = !pendingImg;
+  if (pendingImg) $('#attachImg').src = pendingImg;
+  refresh();
+}
+$('#attachBtn').addEventListener('click', () => $('#attachFile').click());
+$('#attachDrop').addEventListener('click', () => setAttach(''));
+$('#attachFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { setAttach(await shrink(f)); input.focus(); }
+  catch (err) { note(err.message, true); Peg.flash('shrug', 1400); }
+});
+async function lookAt(text) {
+  const image = pendingImg, ask = text || 'What is in this picture?';
+  input.value = ''; grow(); setAttach('');
+  const mine = add('msg user', '');
+  const thumb = new Image(); thumb.src = image; thumb.alt = 'Your photo';
+  mine.append(thumb, document.createTextNode(ask)); log.scrollTop = log.scrollHeight;
+  history.push({ role: 'user', content: ask + ' [The user attached a photo.]' });
+  busy = true; stopped = false; refresh();
+  setStatus('busy', 'Looking'); Peg.setBase('peek');
+  aborter = new AbortController();
+  try {
+    if (!hosted) throw new Error('this only works on the deployed site');
+    const j = await ownChat([{ role: 'system', content: SYSTEM }, ...history.slice(-6, -1), { role: 'user', content: ask }], aborter.signal, image);
+    ownBrain = j.model || ownBrain;
+    add('msg bot', '').innerHTML = md(j.text); log.scrollTop = log.scrollHeight;
+    history.push({ role: 'assistant', content: j.text });
+  } catch (e) {
+    history.pop();
+    if (e?.name !== 'AbortError') { note('Belgo could not look at the photo: ' + (e?.message || e), true); setTimeout(() => Peg.flash('shrug', 1400), 0); }
+  }
+  busy = false; aborter = null; Peg.setBase('idle'); refresh();
+}
 async function send() {
+  if (pendingImg && !busy) return lookAt(input.value.trim());
   const text = input.value.trim();
   if (!text || busy || !isReady()) return;
   input.value = ''; grow();
@@ -872,7 +938,7 @@ async function send() {
   let out = '';
   try {
     setStatus('busy', 'Thinking'); Peg.setBase('think'); lastBubble = null;
-    out = await streamOne([{ role: 'system', content: SYSTEM + GAMEHINT + Pic.prompt + (onFree() || onGh() ? BUILD : '') }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
+    out = await streamOne([{ role: 'system', content: SYSTEM + GAMEHINT + SEEHINT + Pic.prompt + (onFree() || onGh() ? BUILD : '') }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
     if (out && showApp(lastBubble, out)) Peg.hello();
     const pic = /\[\[\s*image\s*:\s*([^\]]+)\]\]/i.exec(out);
     if (pic && !stopped) { setStatus('busy', 'Painting'); Peg.setBase('think'); await paint(pic[1]); }

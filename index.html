@@ -217,13 +217,31 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 /* ---------- apps Belgo builds ---------- */
 .btn.sm{padding:6px 12px;font-size:13.5px}
 .msg.bot.has-app{max-width:100%;align-self:stretch;padding:8px}
-.app{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.appcard{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .app-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .app-bar strong{font:800 15px/1 var(--display);margin-right:auto}
-.app iframe{display:block;width:100%;height:380px;border:1.5px solid var(--outline);border-radius:10px;background:#fff}
-.app.big iframe{height:72dvh}
-.app a.btn{text-decoration:none;color:inherit}
-.app pre{max-height:300px;overflow:auto;margin:0}
+.appcard iframe{display:block;width:100%;height:380px;border:1.5px solid var(--outline);border-radius:10px;background:#fff}
+.appcard.big iframe{height:72dvh}
+.appcard a.btn{text-decoration:none;color:inherit}
+.appcard pre{max-height:300px;overflow:auto;margin:0}
+.msg.bot pre{max-height:420px}
+/* ---------- found images, languages, code blocks ---------- */
+.finds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
+@media (min-width:560px){.finds{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.finds a{display:block;position:relative;border-radius:10px;overflow:hidden;background:var(--surface-2);aspect-ratio:4/3;color:#fff;text-decoration:none}
+.finds img{width:100%;height:100%;object-fit:cover;display:block}
+.finds span{position:absolute;inset:auto 0 0 0;padding:14px 7px 5px;font-size:11px;line-height:1.25;background:linear-gradient(transparent,rgba(0,0,0,.72));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#langChip{flex:0 0 100%;display:flex;align-items:center;gap:8px;margin-left:-6px;font-size:13.5px}
+#langChip strong{font:800 15px/1 var(--display);background:var(--f-yellow);color:#16140f;border-radius:8px;padding:5px 9px}
+#langChip span{color:var(--muted);min-width:0;flex:1}
+#langs .grid{display:flex;flex-wrap:wrap;gap:7px}
+#langs .chip[aria-pressed="true"]{background:var(--f-yellow);color:#16140f;border-color:#16140f}
+.codebox{position:relative;margin:.5em 0}
+.codebox pre{margin:0;padding-top:30px}
+.codebox .tag{position:absolute;top:6px;left:12px;font:600 11px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.codebox button{position:absolute;top:4px;right:6px;border:0;background:transparent;font:600 12px var(--body);color:var(--muted);padding:4px 6px;border-radius:6px}
+.codebox button:hover{background:var(--surface);color:var(--ink)}
+.gamenote{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--surface);font-size:14px}
 /* ---------- refreshed UI ---------- */
 .brand{display:flex;align-items:center;gap:8px;min-width:0}
 .brand img{width:30px;height:30px;flex:none}
@@ -278,6 +296,9 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
   <header>
     <div class="brand"><img src="icons/face.svg" alt=""><h1>Belgo</h1></div>
     <span class="pill" id="status" data-k="idle"><i></i><span id="statusText">Asleep</span></span>
+    <button class="icon-btn" id="openLangs" aria-label="Coding languages" title="Coding languages">
+      <svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 5l-3 14"/></svg>
+    </button>
     <button class="icon-btn" id="openShortcut" aria-label="Add Belgo to your home screen" title="Add Belgo to your home screen">
       <svg viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M6 12H5v8h14v-8h-1"/></svg>
     </button>
@@ -294,7 +315,8 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
       <div>
         <button class="chip" type="button">Code me a snake game</button>
         <button class="chip" type="button">Run DOOM</button>
-        <button class="chip" type="button">Paint a fox in the snow</button>
+        <button class="chip" type="button">Find images of the Atomium</button>
+        <button class="chip" type="button">Open Python</button>
         <button class="chip" type="button">What can you do?</button>
       </div>
     </section>
@@ -342,6 +364,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     </div>
     <form class="composer" id="form">
       <div id="barGame" hidden></div>
+      <div id="langChip" hidden><strong id="langName"></strong><span>is open. Belgo codes in it.</span><button class="btn sm" type="button" id="langClose">Close</button></div>
       <div id="attach" hidden><img id="attachImg" alt="Attached photo"><span>Photo attached. Ask about it, or just send.</span><button class="btn sm" type="button" id="attachDrop">Remove</button></div>
       <textarea id="input" rows="1" placeholder="Wake Belgo up first" aria-label="Message"></textarea>
       <button id="attachBtn" type="button" aria-label="Attach a photo for Belgo to look at" title="Attach a photo for Belgo to look at">
@@ -358,6 +381,15 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     <p class="credits">Inspired by Capri · Runs on <a href="https://developers.cloudflare.com/workers-ai/" target="_blank" rel="noopener">Cloudflare Workers AI</a></p>
   </div>
 </div>
+
+<dialog id="langs" aria-labelledby="lgTitle">
+  <form class="sheet" method="dialog">
+    <h2 id="lgTitle">Open a coding language</h2>
+    <p class="hint">Pick one and Belgo writes everything in that language with his coding model. You can also type "open Python" in the chat.</p>
+    <div class="grid" id="langGrid"></div>
+    <div class="row"><button class="btn" value="cancel">Close</button></div>
+  </form>
+</dialog>
 
 <dialog id="shortcut" aria-labelledby="scTitle">
   <form class="sheet" method="dialog">
@@ -410,6 +442,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
       <p>Belgo's own AI runs <a href="https://developers.cloudflare.com/workers-ai/models/gpt-oss-120b/" target="_blank" rel="noopener">gpt-oss</a> by OpenAI and FLUX by Black Forest Labs on Cloudflare Workers AI. Apps are written by Qwen 3.8 (Alibaba) or GLM-4.7 Flash (Z.ai), or Kimi K2.7 Code (Moonshot AI) on a paid Cloudflare plan.</p>
       <p>Text answers come from <a href="https://cloud.cerebras.ai" target="_blank" rel="noopener">Cerebras</a> (gpt-oss, then Qwen 3.8) when its key is set. Photos are read by Qwen 3.8 or Gemma 4 on Workers AI.</p>
       <p>DOOM runs on the <a href="https://github.com/diekmann/wasm-fizzbuzz" target="_blank" rel="noopener">wasm port by Cornelius Diekmann</a> (GPL source, id Software shareware data). Quake II runs on <a href="https://github.com/GMH-Code/Quake2-WASM" target="_blank" rel="noopener">Qwasm2 by GMH-Code</a>, with id Software's demo.</p>
+      <p>Found images come from <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a> and <a href="https://openverse.org" target="_blank" rel="noopener">Openverse</a>.</p>
       <p>Backup answers come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>; the GitHub option uses <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>.</p>
       <p>On-device answers run on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> by Xuan Son Nguyen, built on llama.cpp.</p>
       <p>Pictures are painted by <a href="https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo" target="_blank" rel="noopener">Z-Image-Turbo</a> (Tongyi-MAI) and <a href="https://huggingface.co/spaces/black-forest-labs/FLUX.2-klein-4B" target="_blank" rel="noopener">FLUX.2 klein</a> (Black Forest Labs) on their public Hugging Face Spaces.</p>
@@ -503,6 +536,7 @@ const Peg = (() => {
 /* ---------------- chat state and rendering ---------------- */
 const BUILD = '\n\nYou can build small web apps, games and tools that run right inside the chat. When the user asks you to build, make or code one, reply with one short sentence and then the complete app as a single HTML document inside one ```html code block. Put all CSS and JavaScript inline in that document. Do not load anything from other websites: no external scripts, fonts or images. Make it work with both mouse and touch, and fit a small screen. When the user asks for a change or reports a bug, send the whole corrected document again.';
 const SEEHINT = '\n\nThe user can attach a photo with the camera button and you can then see and describe it.';
+const FINDHINT = '\n\nYou can find existing images on the web: the user writes "find images of ..." and they appear in the chat. You can open a coding language: the user writes "open Python" (or any language) or taps the code button, and you then code in it.';
 const GAMEHINT = '\n\nYou have two games the user can play in the chat: DOOM and Quake II. They start when the user writes "run DOOM" or "play Quake II"; tell them that if they ask what you can play.';
 const SYSTEM = 'You are Belgo, a small cheerful figure painted in the black, yellow and red of the Belgian flag. You live on top of the chat bar. Be friendly, clear and concise. Reply in the language the user writes in.';
 const log = $('#log'), input = $('#input'), sendBtn = $('#send');
@@ -514,7 +548,7 @@ function inline(s) {
 }
 function md(src) {
   return src.split(/```/).map((part, i) => {
-    if (i % 2) return '<pre><code>' + esc(part.replace(/^[\w+-]*\n/, '')) + '</code></pre>';
+    if (i % 2) { const lang = (/^([\w+#-]*)\n/.exec(part) || [])[1] || ''; return '<pre data-lang="' + esc(lang) + '"><code>' + esc(part.replace(/^[\w+#-]*\n/, '')) + '</code></pre>'; }
     return part.split(/\n{2,}/).filter(p => p.trim()).map(p => '<p>' + inline(p.trim()).replace(/\n/g, '<br>') + '</p>').join('');
   }).join('');
 }
@@ -540,7 +574,7 @@ function refresh() {
   }
   $('#loadbar').classList.toggle('on', busy || loading || painting);
   $('#ideas').hidden = !ready || busy || history.length > 0 || !!log.querySelector('.msg');
-  input.placeholder = ready ? 'Message Belgo' : (loading ? 'Belgo is loading…' : 'Wake Belgo up first');
+  input.placeholder = ready ? (codeLang ? 'What should Belgo code in ' + codeLang.split(' ')[0] + '?' : 'Message Belgo') : (loading ? 'Belgo is loading…' : 'Wake Belgo up first');
   sendBtn.disabled = !busy && !(pendingImg || (ready && input.value.trim()));
   $('#attachBtn').disabled = busy;
   $('#picBtn').disabled = busy || painting || !input.value.trim();
@@ -686,6 +720,7 @@ const hosted = /^https?:$/.test(location.protocol);
 let ownBrain = '', ownDown = 0;
 /* Building requests go to a coding model: the user asks to make something, or the chat already holds an app. */
 function isCoding(messages) {
+  if (codeLang) return true;
   const talk = messages.filter(m => m.role !== 'system');
   const last = [...talk].reverse().find(m => m.role === 'user')?.content || '';
   if (/\b(build|code|program|script|game|app|website|web ?page|html|css|javascript|calculator|bug|fix)\b/i.test(last)) return true;
@@ -880,7 +915,7 @@ function showApp(bubble, out) {
   if (!app || !bubble) return false;
   bubble.classList.add('has-app');
   bubble.innerHTML = md(app.rest || 'Here it is.');
-  const card = document.createElement('div'); card.className = 'app';
+  const card = document.createElement('div'); card.className = 'appcard';
   const bar = document.createElement('div'); bar.className = 'app-bar';
   const title = document.createElement('strong'); title.textContent = 'Live preview';
   const frame = document.createElement('iframe');
@@ -909,8 +944,8 @@ function showApp(bubble, out) {
 const GAMES = [
   { id: 'doom', name: 'DOOM', match: /\bdoom\b/i, src: 'games/doom/index.html',
     credit: 'DOOM shareware episode by id Software. WebAssembly port by Cornelius Diekmann. No sound in this port.' },
-  { id: 'quake2', name: 'Quake II', match: /\bquake\s*(ii|2)?\b/i, src: 'https://qwasm2.m-h.org.uk/',
-    credit: 'Quake II demo by id Software, running on Qwasm2 by GMH-Code from their own site. Tick the age box and press Start; the first load is about 40 MB.' },
+  { id: 'quake2', name: 'Quake II', match: /\bquake\s*(ii|2)?\b/i, src: 'https://qwasm2.m-h.org.uk/', external: true,
+    credit: 'Quake II demo by id Software, on Qwasm2 by GMH-Code. It only showed a black screen inside the chat bar, so it opens in its own tab. Tick the age box and press Start; the first load is about 40 MB.' },
 ];
 function wantsGame(text) {
   if (!/\b(run|play|start|launch|open|load|boot)\b/i.test(text)) return null;
@@ -922,6 +957,18 @@ async function runGame(game) {
   const bubble = add('msg bot', 'Running ' + game.name + '…');
   await sleep(900);
   const host = $('#barGame'); host.textContent = ''; host.classList.remove('big');
+  if (game.external) {
+    const box = document.createElement('div'); box.className = 'gamenote';
+    const why = document.createElement('span'); why.textContent = game.credit;
+    const row = document.createElement('div'); row.className = 'row';
+    const go = document.createElement('a'); go.className = 'btn primary'; go.href = game.src; go.target = '_blank'; go.rel = 'noopener'; go.textContent = 'Open ' + game.name;
+    const shut = document.createElement('button'); shut.type = 'button'; shut.className = 'btn'; shut.textContent = 'Close';
+    shut.addEventListener('click', () => { host.textContent = ''; host.hidden = true; });
+    row.append(go, shut); box.append(why, row); host.append(box); host.hidden = false;
+    bubble.textContent = game.name + ' is ready. Tap "Open ' + game.name + '" in the chat bar.';
+    log.scrollTop = log.scrollHeight; Peg.setBase('idle'); Peg.flash('wave', 1500);
+    return;
+  }
   const bar = document.createElement('div'); bar.className = 'app-bar';
   const title = document.createElement('strong'); title.textContent = game.name;
   const frame = document.createElement('iframe');
@@ -938,6 +985,101 @@ async function runGame(game) {
   bubble.textContent = game.name + ' is running in the chat bar. ' + game.credit;
   log.scrollTop = log.scrollHeight;
   Peg.setBase('idle'); Peg.hello();
+}
+/* Finding images: free libraries that need no key. Wikimedia Commons first, Openverse as backup. */
+function wantsFind(text) {
+  const m = /^\s*(?:please\s+)?(?:find|search(?:\s+for)?|look\s+up|look\s+for|show(?:\s+me)?|get(?:\s+me)?)\s+(?:me\s+)?(?:some\s+|a\s+few\s+|an?\s+)?(?:images?|pictures?|photos?|pics?)\s+(?:of|about|for|with)\s+(.{2,120})$/i.exec(text);
+  return m ? m[1].replace(/[.?!]+$/, '').trim() : '';
+}
+const plain = html => { const d = document.createElement('div'); d.innerHTML = String(html || ''); return d.textContent.trim(); };
+async function searchCommons(q) {
+  const u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=12&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=480&format=json&origin=*&gsrsearch=' + encodeURIComponent(q + ' filetype:bitmap');
+  const j = await (await fetch(u)).json();
+  return Object.values(j.query?.pages || {}).sort((a, b) => (a.index || 0) - (b.index || 0)).map(pg => {
+    const i = pg.imageinfo?.[0]; if (!i?.thumburl) return null;
+    return { thumb: i.thumburl, page: i.descriptionurl || i.url, by: plain(i.extmetadata?.Artist?.value) || 'Wikimedia Commons', title: String(pg.title || '').replace(/^File:|\.\w+$/g, '') };
+  }).filter(Boolean);
+}
+async function searchOpenverse(q) {
+  const j = await (await fetch('https://api.openverse.org/v1/images/?page_size=12&q=' + encodeURIComponent(q))).json();
+  return (j.results || []).map(r => r.thumbnail || r.url ? { thumb: r.thumbnail || r.url, page: r.foreign_landing_url || r.url, by: r.creator || 'Openverse', title: r.title || '' } : null).filter(Boolean);
+}
+async function findImages(query) {
+  Peg.setBase('think'); setStatus('busy', 'Searching');
+  const bubble = add('msg bot has-app', 'Looking for images of ' + query + '…');
+  let hits = [], where = '';
+  for (const [name, fn] of [['Wikimedia Commons', searchCommons], ['Openverse', searchOpenverse]]) {
+    try { hits = await fn(query); } catch { hits = []; }
+    if (hits.length) { where = name; break; }
+  }
+  if (!hits.length) {
+    bubble.classList.remove('has-app');
+    bubble.textContent = 'I could not find images of ' + query + '. Try other words, or ask me to paint one.';
+    Peg.setBase('idle'); Peg.flash('shrug', 1400); return false;
+  }
+  bubble.textContent = 'Images of ' + query + ' from ' + where + '. Tap one for its source and licence.';
+  const grid = document.createElement('div'); grid.className = 'finds';
+  hits.slice(0, 8).forEach(h => {
+    const a = document.createElement('a'); a.href = h.page; a.target = '_blank'; a.rel = 'noopener';
+    const im = new Image(); im.loading = 'lazy'; im.alt = h.title || query; im.src = h.thumb;
+    im.onerror = () => a.remove();
+    const cap = document.createElement('span'); cap.textContent = h.by;
+    a.append(im, cap); grid.append(a);
+  });
+  bubble.append(grid); log.scrollTop = log.scrollHeight;
+  Peg.setBase('idle'); Peg.flash('nod', 950); return true;
+}
+
+/* Coding languages: "open Python" makes Belgo answer in that language with the coding model. */
+const LANGS = ['Web (HTML, CSS, JS)', 'Python', 'JavaScript', 'TypeScript', 'Java', 'C', 'C++', 'C#', 'Go', 'Rust', 'Swift', 'Kotlin', 'PHP', 'Ruby', 'Lua', 'SQL', 'Bash', 'PowerShell', 'Dart', 'R', 'Scala', 'Haskell', 'Perl', 'MATLAB', 'Julia', 'Zig', 'GDScript', 'Assembly', 'Pascal', 'Fortran', 'COBOL', 'Elixir'];
+const LANG_ALIASES = { web: 'Web (HTML, CSS, JS)', html: 'Web (HTML, CSS, JS)', css: 'Web (HTML, CSS, JS)', js: 'JavaScript', ts: 'TypeScript', 'c sharp': 'C#', csharp: 'C#', cpp: 'C++', 'c plus plus': 'C++', golang: 'Go', shell: 'Bash', asm: 'Assembly', godot: 'GDScript', py: 'Python' };
+let codeLang = '';
+function matchLang(name) {
+  const k = name.trim().toLowerCase();
+  return LANG_ALIASES[k] || LANGS.find(l => l.toLowerCase() === k) || '';
+}
+function wantsLang(text) {
+  const t = text.trim();
+  const c = /^(?:close|exit|leave|stop)\s+(?:the\s+)?([a-z+#. ]+?)\s*[.!]?$/i.exec(t);
+  if (c && codeLang && (/^(language|coding|code\s*mode|code)$/i.test(c[1]) || matchLang(c[1]))) return { close: true };
+  if (/^(open|show)\s+(the\s+)?(coding\s+)?languages?\s*$/i.test(t)) return { list: true };
+  const m = /^(?:open|switch\s+to|start|use|code\s+in|let'?s\s+code\s+in)\s+([a-z+#. ]{1,20}?)(?:\s+(?:language|mode|please))?\s*[.!]?$/i.exec(t);
+  const lang = m && matchLang(m[1]);
+  return lang ? { lang } : null;
+}
+function setLang(lang) {
+  codeLang = lang;
+  $('#langChip').hidden = !lang; $('#langName').textContent = lang;
+  document.querySelectorAll('#langGrid .chip').forEach(c => c.setAttribute('aria-pressed', String(c.textContent === lang)));
+  input.placeholder = lang ? 'What should Belgo code in ' + lang.split(' ')[0] + '?' : 'Message Belgo';
+}
+function langPrompt() {
+  if (!codeLang) return '';
+  if (codeLang.startsWith('Web')) return '\n\nThe user opened web coding. Answer every request by building it as a web app, as described above.';
+  return '\n\nThe user opened ' + codeLang + '. Write all code in ' + codeLang + ' and nothing else. Give one short sentence, then the complete, runnable code in a single ```' + codeLang.toLowerCase().replace('#', 'sharp').replace('++', 'pp') + ' code block, then one line on how to run it. Do not build a web page unless asked.';
+}
+$('#langGrid').append(...LANGS.map(l => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = l; b.setAttribute('aria-pressed', 'false');
+  b.addEventListener('click', () => { $('#langs').close(); setLang(l); note(l + ' is open. Tell Belgo what to code.'); Peg.hello(); input.focus(); }); return b; }));
+$('#openLangs').addEventListener('click', () => $('#langs').showModal());
+$('#langs').addEventListener('click', e => { if (e.target === $('#langs')) $('#langs').close(); });
+$('#langClose').addEventListener('click', () => { const was = codeLang; setLang(''); note(was + ' closed.'); });
+
+/* Code blocks get a language tag and a copy button. */
+function dressCode(bubble) {
+  if (!bubble) return;
+  bubble.querySelectorAll('pre').forEach(pre => {
+    if (pre.parentElement.classList.contains('codebox') || pre.closest('.appcard')) return;
+    const box = document.createElement('div'); box.className = 'codebox';
+    pre.replaceWith(box);
+    const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = pre.dataset.lang || codeLang || 'code';
+    const copy = document.createElement('button'); copy.type = 'button'; copy.textContent = 'Copy';
+    copy.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(pre.textContent); copy.textContent = 'Copied'; }
+      catch { getSelection().selectAllChildren(pre); copy.textContent = 'Selected'; }
+      setTimeout(() => { copy.textContent = 'Copy'; }, 1500);
+    });
+    box.append(tag, copy, pre);
+  });
 }
 let lastBubble = null;
 const clearTyping = () => log.querySelectorAll('.typing').forEach(n => n.remove());
@@ -1011,6 +1153,23 @@ async function send() {
   const text = input.value.trim();
   if (!text || busy || !isReady()) return;
   input.value = ''; grow();
+  const lg = wantsLang(text);
+  if (lg) {
+    add('msg user', text);
+    if (lg.list) $('#langs').showModal();
+    else if (lg.close) { const was = codeLang; setLang(''); note(was + ' closed.'); }
+    else { setLang(lg.lang); note(lg.lang + ' is open. Tell Belgo what to code.'); Peg.hello(); }
+    refresh(); return;
+  }
+  const find = wantsFind(text);
+  if (find) {
+    add('msg user', text);
+    busy = true; refresh();
+    const ok = await findImages(find);
+    history.push({ role: 'user', content: text }, { role: 'assistant', content: ok ? 'I showed the user images of ' + find + ' in the chat.' : 'I could not find images of ' + find + '.' });
+    busy = false; refresh();
+    return;
+  }
   const game = wantsGame(text);
   if (game) {
     add('msg user', text);
@@ -1026,8 +1185,8 @@ async function send() {
   let out = '';
   try {
     setStatus('busy', 'Thinking'); Peg.setBase('think'); lastBubble = null; showTyping();
-    out = await streamOne([{ role: 'system', content: SYSTEM + GAMEHINT + SEEHINT + Pic.prompt + (onFree() || onGh() ? BUILD : '') }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
-    clearTyping();
+    out = await streamOne([{ role: 'system', content: SYSTEM + GAMEHINT + SEEHINT + FINDHINT + Pic.prompt + (onFree() || onGh() ? BUILD : '') + langPrompt() }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
+    clearTyping(); dressCode(lastBubble);
     if (out && showApp(lastBubble, out)) setTimeout(() => Peg.flash('dance', 2400), 50);
     else if (out) setTimeout(() => Peg.flash('nod', 950), 50);
     const pic = /\[\[\s*image\s*:\s*([^\]]+)\]\]/i.exec(out);

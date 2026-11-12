@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>DOOM (shareware)</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;color:#ddd;font:14px system-ui,sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+  .wrap{height:100%;display:flex;flex-direction:column;align-items:center}
+  canvas{display:block;width:100%;max-height:calc(100% - 150px);aspect-ratio:16/10;object-fit:contain;image-rendering:pixelated;background:#000;outline:0;flex:1 1 auto;min-height:0}
+  .pad{flex:none;width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;gap:6px;padding:8px 6px;box-sizing:border-box}
+  .dpad{display:grid;grid-template-columns:repeat(3,minmax(0,42px));flex:0 1 136px;grid-template-rows:repeat(2,46px);gap:5px}
+  .acts{display:grid;grid-template-columns:repeat(3,minmax(0,54px));flex:0 1 172px;grid-template-rows:repeat(2,46px);gap:5px}
+  button{min-width:0;padding:0;border:1.5px solid #555;border-radius:10px;background:#1c1c1c;color:#eee;font:600 13px system-ui,sans-serif;touch-action:none}
+  button.on{background:#fdda24;color:#111;border-color:#fdda24}
+  #msg{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:20px;background:#000}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="screen" width="640" height="400" tabindex="0"></canvas>
+  <div class="pad">
+    <div class="dpad">
+      <span></span><button data-k="173" aria-label="Forward">▲</button><span></span>
+      <button data-k="172" aria-label="Turn left">◀</button><button data-k="175" aria-label="Back">▼</button><button data-k="174" aria-label="Turn right">▶</button>
+    </div>
+    <div class="acts">
+      <button data-k="157">Fire</button><button data-k="32">Use</button><button data-k="13">Enter</button>
+      <button data-k="184">Strafe</button><button data-k="121">Y</button><button data-k="27">Menu</button>
+    </div>
+  </div>
+</div>
+<div id="msg">Loading DOOM…</div>
+<script src="main.js"></script>
+</body>
+</html>

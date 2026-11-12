@@ -200,12 +200,15 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
 .msg.pic a,.msg.pic span{font-size:12.5px;color:var(--muted);padding:0 6px 2px}
 /* ---------- apps Belgo builds ---------- */
 .btn.sm{padding:6px 12px;font-size:13.5px}
-.msg.bot.has-app{max-width:100%;align-self:stretch}
+.msg.bot.has-app{max-width:100%;align-self:stretch;padding:8px}
 .app{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .app-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .app-bar strong{font:800 15px/1 var(--display);margin-right:auto}
 .app iframe{display:block;width:100%;height:380px;border:1.5px solid var(--outline);border-radius:10px;background:#fff}
 .app.big iframe{height:72dvh}
+.app.game iframe{height:470px;background:#000}
+.app.game.big iframe{height:82dvh}
+.app a.btn{text-decoration:none;color:inherit}
 .app pre{max-height:300px;overflow:auto;margin:0}
 @media (prefers-reduced-motion:reduce){#peg *,#peg{animation:none!important;transition:none!important}}
 </style>
@@ -312,6 +315,8 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
       <h3>Credits</h3>
       <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
       <p>Belgo's own AI runs <a href="https://developers.cloudflare.com/workers-ai/models/gpt-oss-120b/" target="_blank" rel="noopener">gpt-oss</a> by OpenAI and FLUX by Black Forest Labs on Cloudflare Workers AI. Apps are written by Qwen 3.8 (Alibaba) or GLM-4.7 Flash (Z.ai), or Kimi K2.7 Code (Moonshot AI) on a paid Cloudflare plan.</p>
+      <p>Text answers come from <a href="https://cloud.cerebras.ai" target="_blank" rel="noopener">Cerebras</a> (Qwen 3.8) when its key is set.</p>
+      <p>DOOM runs on the <a href="https://github.com/diekmann/wasm-fizzbuzz" target="_blank" rel="noopener">wasm port by Cornelius Diekmann</a> (GPL source, id Software shareware data). Quake II runs on <a href="https://github.com/GMH-Code/Quake2-WASM" target="_blank" rel="noopener">Qwasm2 by GMH-Code</a>, with id Software's demo.</p>
       <p>Backup answers come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>; the GitHub option uses <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>.</p>
       <p>On-device answers run on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> by Xuan Son Nguyen, built on llama.cpp.</p>
       <p>Pictures are painted by <a href="https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo" target="_blank" rel="noopener">Z-Image-Turbo</a> (Tongyi-MAI) and <a href="https://huggingface.co/spaces/black-forest-labs/FLUX.2-klein-4B" target="_blank" rel="noopener">FLUX.2 klein</a> (Black Forest Labs) on their public Hugging Face Spaces.</p>
@@ -402,6 +407,7 @@ const Peg = (() => {
 
 /* ---------------- chat state and rendering ---------------- */
 const BUILD = '\n\nYou can build small web apps, games and tools that run right inside the chat. When the user asks you to build, make or code one, reply with one short sentence and then the complete app as a single HTML document inside one ```html code block. Put all CSS and JavaScript inline in that document. Do not load anything from other websites: no external scripts, fonts or images. Make it work with both mouse and touch, and fit a small screen. When the user asks for a change or reports a bug, send the whole corrected document again.';
+const GAMEHINT = '\n\nYou have two games the user can play in the chat: DOOM and Quake II. They start when the user writes "run DOOM" or "play Quake II"; tell them that if they ask what you can play.';
 const SYSTEM = 'You are Belgo, a small cheerful figure painted in the black, yellow and red of the Belgian flag. You live on top of the chat bar. Be friendly, clear and concise. Reply in the language the user writes in.';
 const log = $('#log'), input = $('#input'), sendBtn = $('#send');
 let history = [], busy = false, loading = false, engine = null, engineId = '', aborter = null, stopLocal = false, stopped = false, painting = false;
@@ -800,6 +806,40 @@ function showApp(bubble, out) {
   log.scrollTop = log.scrollHeight;
   return true;
 }
+/* Games: asking Belgo to run one shows "Running…" and then the game itself inside the chat. */
+const GAMES = [
+  { id: 'doom', name: 'DOOM', match: /\bdoom\b/i, src: 'games/doom/index.html',
+    credit: 'DOOM shareware episode by id Software. WebAssembly port by Cornelius Diekmann. No sound in this port.' },
+  { id: 'quake2', name: 'Quake II', match: /\bquake\s*(ii|2)?\b/i, src: 'https://qwasm2.m-h.org.uk/',
+    credit: 'Quake II demo by id Software, running on Qwasm2 by GMH-Code from their own site. Tick the age box and press Start; the first load is about 40 MB.' },
+];
+function wantsGame(text) {
+  if (!/\b(run|play|start|launch|open|load|boot)\b/i.test(text)) return null;
+  return GAMES.find(g => g.match.test(text)) || null;
+}
+async function runGame(game) {
+  Peg.setBase('load'); Peg.progress(0); $('#liftText').textContent = '…';
+  const bubble = add('msg bot has-app', 'Running ' + game.name + '…');
+  await sleep(900);
+  const card = document.createElement('div'); card.className = 'app game';
+  const bar = document.createElement('div'); bar.className = 'app-bar';
+  const title = document.createElement('strong'); title.textContent = game.name;
+  const frame = document.createElement('iframe');
+  frame.title = game.name; frame.allow = 'fullscreen; gamepad; autoplay';
+  frame.src = game.src;
+  const btn = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = label; b.addEventListener('click', () => fn(b)); return b; };
+  const link = document.createElement('a'); link.className = 'btn sm'; link.href = game.src; link.target = '_blank'; link.rel = 'noopener'; link.textContent = 'New tab';
+  bar.append(title,
+    btn('Restart', () => { frame.src = game.src; }),
+    btn('Bigger', b => { b.textContent = card.classList.toggle('big') ? 'Smaller' : 'Bigger'; }),
+    link,
+    btn('Close', () => { card.remove(); bubble.classList.remove('has-app'); bubble.textContent = game.name + ' closed.'; }));
+  const credit = document.createElement('span'); credit.className = 'hint'; credit.textContent = game.credit;
+  card.append(bar, frame, credit);
+  bubble.append(card);
+  log.scrollTop = log.scrollHeight;
+  Peg.setBase('idle'); Peg.hello();
+}
 let lastBubble = null;
 async function streamOne(messages) {
   let out = '', bubble = null;
@@ -817,13 +857,22 @@ async function send() {
   const text = input.value.trim();
   if (!text || busy || !isReady()) return;
   input.value = ''; grow();
+  const game = wantsGame(text);
+  if (game) {
+    add('msg user', text);
+    history.push({ role: 'user', content: text }, { role: 'assistant', content: 'I started ' + game.name + ' for you in the chat.' });
+    busy = true; refresh();
+    await runGame(game);
+    busy = false; refresh();
+    return;
+  }
   history.push({ role: 'user', content: text });
   add('msg user', text);
   busy = true; stopped = false; refresh();
   let out = '';
   try {
     setStatus('busy', 'Thinking'); Peg.setBase('think'); lastBubble = null;
-    out = await streamOne([{ role: 'system', content: SYSTEM + Pic.prompt + (onFree() || onGh() ? BUILD : '') }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
+    out = await streamOne([{ role: 'system', content: SYSTEM + GAMEHINT + Pic.prompt + (onFree() || onGh() ? BUILD : '') }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
     if (out && showApp(lastBubble, out)) Peg.hello();
     const pic = /\[\[\s*image\s*:\s*([^\]]+)\]\]/i.exec(out);
     if (pic && !stopped) { setStatus('busy', 'Painting'); Peg.setBase('think'); await paint(pic[1]); }

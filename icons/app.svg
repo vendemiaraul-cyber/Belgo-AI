@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="flag" gradientUnits="userSpaceOnUse" x1="34" y1="0" x2="86" y2="0">
+      <stop offset="0" stop-color="#16140f"/><stop offset=".335" stop-color="#16140f"/>
+      <stop offset=".335" stop-color="#fdda24"/><stop offset=".665" stop-color="#fdda24"/>
+      <stop offset=".665" stop-color="#ef3340"/><stop offset="1" stop-color="#ef3340"/>
+    </linearGradient>
+    <filter id="edge" x="-20%" y="-20%" width="140%" height="140%">
+      <feMorphology in="SourceAlpha" operator="dilate" radius="2.6" result="fat"/>
+      <feFlood flood-color="#f6f3ea"/><feComposite in2="fat" operator="in" result="rim"/>
+      <feMerge><feMergeNode in="rim"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="#0d0c12"/>
+  <!-- Belgo, leaning back with his limbs flung out -->
+  <g transform="translate(278 270) rotate(52) scale(2.15) translate(-60 -110)" filter="url(#edge)" fill="url(#flag)">
+    <rect x="37" y="116" width="22" height="78" rx="10" transform="rotate(28 48 126)"/>
+    <rect x="61" y="116" width="22" height="78" rx="10" transform="rotate(-34 72 126)"/>
+    <rect x="12.5" y="62" width="18.5" height="66" rx="9.25" transform="rotate(128 22 71)"/>
+    <rect x="89" y="62" width="18.5" height="66" rx="9.25" transform="rotate(-72 98 71)"/>
+    <path d="M34 82a22 22 0 0 1 22-22h8a22 22 0 0 1 22 22v50H34z"/>
+    <circle cx="60" cy="30" r="24" transform="rotate(-14 60 54)"/>
+  </g>
+</svg></body></html>

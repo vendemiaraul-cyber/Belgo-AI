@@ -1178,8 +1178,8 @@ function wantsSeek(text) {
 const clock = s => (s >= 3600 ? Math.floor(s / 3600) + ':' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') : Math.floor(s / 60)) + ':' + String(s % 60).padStart(2, '0');
 let lastTube = null;
 async function playVideos(q, at) {
-  Peg.setBase('think'); setStatus('busy', 'Searching YouTube');
-  const bubble = add('msg bot has-app', 'Searching YouTube for ' + q + '…');
+  Peg.setBase('think'); setStatus('busy', 'Searching videos');
+  const bubble = add('msg bot has-app', 'Searching for videos of ' + q + '…');
   const link = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
   const offer = text => {
     bubble.classList.remove('has-app'); bubble.textContent = text + ' ';
@@ -1191,12 +1191,10 @@ async function playVideos(q, at) {
   try {
     const r = await fetch('/api/videos?q=' + encodeURIComponent(q));
     const j = /json/i.test(r.headers.get('content-type') || '') ? await r.json() : { error: 'nokey' };
-    if (j.error === 'nokey') return offer('I can play YouTube videos here once a YouTube key is added to the site (the secret YOUTUBE_API_KEY). Until then:');
-    if (j.error) return offer(j.error);
     videos = j.videos || [];
+    if (!videos.length) return offer(j.error === 'nokey' ? 'Video search only works on the deployed site.' : (j.error || 'I found no videos for ' + q + '.') + ' You can look on YouTube yourself:');
   } catch { return offer('I could not reach YouTube search.'); }
-  if (!videos.length) return offer('YouTube had nothing for ' + q + '.');
-  bubble.textContent = 'From YouTube, for ' + q + ':';
+  bubble.textContent = 'From ' + (videos[0].site || 'YouTube') + ', for ' + q + ':';
   const card = document.createElement('div'); card.className = 'tube';
   const screen = document.createElement('div'); screen.className = 'screen';
   const now = document.createElement('div'); now.className = 'now';
@@ -1205,7 +1203,7 @@ async function playVideos(q, at) {
   const show = (v, start) => {
     state.id = v.id; state.title = v.title;
     const f = document.createElement('iframe');
-    f.src = 'https://www.youtube-nocookie.com/embed/' + v.id + '?autoplay=1&playsinline=1&rel=0' + (start ? '&start=' + start : '');
+    f.src = (v.embed || 'https://www.youtube-nocookie.com/embed/' + v.id + '?autoplay=1&playsinline=1&rel=0') + (start ? '&start=' + start + (v.site === 'Dailymotion' ? '&startTime=' + start : '') : '');
     f.title = v.title; f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true;
     screen.textContent = ''; screen.append(f);
     now.textContent = v.title; const by = document.createElement('span'); by.textContent = v.channel + (start ? ' · from ' + clock(start) : ''); now.append(by);

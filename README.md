@@ -5,7 +5,7 @@ A chat companion who lives on the chat bar.
 - **Brain:** Belgo's own server code (`functions/api/chat.js`) runs gpt-oss on Cloudflare Workers AI, with the free Pollinations text service as a backup. GitHub Models and an on-device model (wllama) are optional in settings.
 - **Text:** if the secret `CEREBRAS_API_KEY` is set on the Pages project, answers come from Cerebras (gpt-oss-120b for chat, Qwen 3.8 27B for building apps) before Cloudflare Workers AI.
 - **Games:** write "run DOOM" or "play Quake II". DOOM (shareware) is in `games/doom`; Quake II opens the Qwasm2 site in its own tab, because it stays black inside a frame. DOOM runs inside the chat bar.
-- **YouTube:** "play a video of …" searches YouTube (`functions/api/videos.js`, needs the secret `YOUTUBE_API_KEY`) and plays the result in the chat; "skip to 2:30" jumps to a point.
+- **YouTube:** "play a video of …" searches YouTube without a key through public Piped servers, with Dailymotion as backup (`functions/api/videos.js`, the method from the MeoDeo project; the secret `YOUTUBE_API_KEY` is optional) and plays the result in the chat; "skip to 2:30" jumps to a point.
 - **Photos:** the camera button attaches a photo and Belgo describes it with a vision model on Workers AI (Qwen 3.8 27B, then Gemma 4).
 - **Find images:** "find images of …" searches Wikimedia Commons, then Openverse, and shows the results with their sources.
 - **Coding languages:** "open Python" (or the code button) puts Belgo in one of 32 languages; requests then go to the coding model and code blocks get a copy button.

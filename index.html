@@ -829,6 +829,7 @@ const GAMES = [
 ];
 function wantsGame(text) {
   if (!/\b(run|play|start|launch|open|load|boot)\b/i.test(text)) return null;
+  if (/\b(code|build|make|create|write|program|clone)\b/i.test(text)) return null; // a request to build something, not to start a game
   return GAMES.find(g => g.match.test(text)) || null;
 }
 async function runGame(game) {

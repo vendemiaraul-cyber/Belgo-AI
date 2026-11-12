@@ -311,7 +311,7 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
     <div class="credits-box">
       <h3>Credits</h3>
       <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
-      <p>Belgo's own AI runs <a href="https://developers.cloudflare.com/workers-ai/models/gpt-oss-120b/" target="_blank" rel="noopener">gpt-oss</a> by OpenAI and FLUX by Black Forest Labs on Cloudflare Workers AI.</p>
+      <p>Belgo's own AI runs <a href="https://developers.cloudflare.com/workers-ai/models/gpt-oss-120b/" target="_blank" rel="noopener">gpt-oss</a> by OpenAI and FLUX by Black Forest Labs on Cloudflare Workers AI. Apps are written by Qwen 3.8 (Alibaba) or GLM-4.7 Flash (Z.ai), or Kimi K2.7 Code (Moonshot AI) on a paid Cloudflare plan.</p>
       <p>Backup answers come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>; the GitHub option uses <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>.</p>
       <p>On-device answers run on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> by Xuan Son Nguyen, built on llama.cpp.</p>
       <p>Pictures are painted by <a href="https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo" target="_blank" rel="noopener">Z-Image-Turbo</a> (Tongyi-MAI) and <a href="https://huggingface.co/spaces/black-forest-labs/FLUX.2-klein-4B" target="_blank" rel="noopener">FLUX.2 klein</a> (Black Forest Labs) on their public Hugging Face Spaces.</p>
@@ -579,8 +579,15 @@ async function freeOnce(messages, signal) {
 /* Belgo's own brain: the /api/chat function that ships with this site and runs gpt-oss on Cloudflare Workers AI. */
 const hosted = /^https?:$/.test(location.protocol);
 let ownBrain = '', ownDown = 0;
+/* Building requests go to a coding model: the user asks to make something, or the chat already holds an app. */
+function isCoding(messages) {
+  const talk = messages.filter(m => m.role !== 'system');
+  const last = [...talk].reverse().find(m => m.role === 'user')?.content || '';
+  if (/\b(build|code|program|script|game|app|website|web ?page|html|css|javascript|calculator|bug|fix)\b/i.test(last)) return true;
+  return talk.some(m => m.role === 'assistant' && /```html|<!doctype html/i.test(m.content));
+}
 async function ownChat(messages, signal) {
-  const r = await fetch('/api/chat', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages }) });
+  const r = await fetch('/api/chat', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages, task: isCoding(messages) ? 'code' : 'chat' }) });
   if (!/json/i.test(r.headers.get('content-type') || '')) throw new Error('this site has no server code deployed');
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.text) throw new Error(j.error || 'answered ' + r.status);

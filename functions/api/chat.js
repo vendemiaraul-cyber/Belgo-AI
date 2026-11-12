@@ -1,5 +1,8 @@
 // Belgo's own brain: runs on this site's Cloudflare account through Workers AI. No key in the page.
 const MODELS = ['@cf/openai/gpt-oss-120b', '@cf/openai/gpt-oss-20b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast'];
+// For building apps: the dedicated coding model first (it needs the Workers Paid plan and is refused on the
+// free plan at no cost), then the best free models, then the general ones above.
+const CODE_MODELS = ['@cf/moonshotai/kimi-k2.7-code', '@cf/qwen/qwen3.8-27b', '@cf/zai-org/glm-4.7-flash', ...MODELS];
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 
@@ -31,13 +34,18 @@ export async function onRequestPost({ request, env }) {
   if (!messages.some(m => m.role === 'user')) return json({ error: 'No message.' }, 400);
 
   let last = '';
-  for (const model of MODELS) {
-    for (const input of [{ messages, max_tokens: 6000 }, { input: messages }]) {
+  const coding = body.task === 'code';
+  for (const model of coding ? CODE_MODELS : MODELS) {
+    for (const input of [{ messages, max_tokens: coding ? 8000 : 2000 }, { input: messages }]) {
       try {
         const text = pick(await env.AI.run(model, input)).trim();
         if (text) return json({ text, model: model.split('/').pop() });
         last = model + ' gave an empty answer';
-      } catch (e) { last = e?.message || String(e); }
+      } catch (e) {
+        last = e?.message || String(e);
+        // Not on this plan, retired, or out of daily allowance: the other request shape will not help.
+        if (/5035|5028|3036|3042|paid|upgrade|deprecat|allocation/i.test(last)) break;
+      }
     }
   }
   return json({ error: last || 'No model answered.' }, 502);

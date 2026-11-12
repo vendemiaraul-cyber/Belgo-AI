@@ -3,7 +3,7 @@
 A chat companion who lives on the chat bar.
 
 - **Brain:** Belgo's own server code (`functions/api/chat.js`) runs gpt-oss on Cloudflare Workers AI, with the free Pollinations text service as a backup. GitHub Models and an on-device model (wllama) are optional in settings.
-- **Apps:** ask Belgo to build a game, tool or web page and it runs in a live preview inside the chat, in a locked-down frame.
+- **Apps:** ask Belgo to build a game, tool or web page and it runs in a live preview inside the chat, in a locked-down frame. Building requests go to a coding model: Kimi K2.7 Code on a Workers Paid plan, otherwise Qwen 3.8 27B, then GLM-4.7 Flash, then gpt-oss.
 - **Pictures:** Belgo's own server code (`functions/api/image.js`) paints with FLUX on Cloudflare Workers AI, with Z-Image-Turbo and FLUX.2 klein on public Hugging Face Spaces as backups.
 
 ## Cloudflare

@@ -11,13 +11,13 @@ async function toBytes(out) {
 }
 const kind = b => b[0] === 0x89 ? 'image/png' : b[0] === 0x52 ? 'image/webp' : 'image/jpeg';
 
-async function klein(env, prompt) {
+const klein = size => async (env, prompt) => {
   const form = new FormData();
   form.append('prompt', prompt); form.append('width', '1024'); form.append('height', '1024');
   const wrapped = new Response(form);
-  return env.AI.run('@cf/black-forest-labs/flux-2-klein-4b', { multipart: { body: wrapped.body, contentType: wrapped.headers.get('content-type') } });
-}
-const schnell = (env, prompt) => env.AI.run('@cf/black-forest-labs/flux-1-schnell', { prompt, steps: 6 });
+  return env.AI.run('@cf/black-forest-labs/flux-2-klein-' + size, { multipart: { body: wrapped.body, contentType: wrapped.headers.get('content-type') } });
+};
+const schnell = (env, prompt) => env.AI.run('@cf/black-forest-labs/flux-1-schnell', { prompt, steps: 8 });
 
 export async function onRequestPost({ request, env }) {
   if (!env.AI) return fail('Workers AI is not connected to this site.', 503);
@@ -30,7 +30,8 @@ export async function onRequestPost({ request, env }) {
   if (!prompt) return fail('No description.', 400);
 
   let last = '';
-  for (const [name, run] of [['FLUX.2 klein', klein], ['FLUX.1 schnell', schnell]]) {
+  // The larger FLUX.2 klein paints better, so it goes first; the smaller ones are the backups.
+  for (const [name, run] of [['FLUX.2 klein 9B', klein('9b')], ['FLUX.2 klein 4B', klein('4b')], ['FLUX.1 schnell', schnell]]) {
     try {
       const bytes = await toBytes(await run(env, prompt));
       if (bytes.length > 1000) return new Response(bytes, { headers: { 'content-type': kind(bytes), 'x-model': name, 'cache-control': 'no-store' } });

@@ -10,7 +10,7 @@ A chat companion who lives on the chat bar.
 - **Coding languages:** "open Python" (or the code button) puts Belgo in one of 32 languages; requests then go to the coding model and code blocks get a copy button.
 - **Apps:** ask Belgo to build a game, tool or web page and it runs in a live preview inside the chat, in a locked-down frame. Building requests go to a coding model: Kimi K2.7 Code on a Workers Paid plan, otherwise gpt-oss-120b, then GLM-4.7 Flash, then Qwen 3.8 27B. Settings has a picker to force one.
 - **More free coding models:** add any of the secrets `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY` or `NVIDIA_API_KEY` and building requests use that provider first, choosing a coding model from its live model list.
-- **Pictures:** Belgo's own server code (`functions/api/image.js`) paints with FLUX on Cloudflare Workers AI, with Z-Image-Turbo and FLUX.2 klein on public Hugging Face Spaces as backups.
+- **Pictures:** Z-Image-Turbo on its public Hugging Face Space paints first. Backups are Belgo's own server code (`functions/api/image.js`, FLUX.2 klein 9B, then 4B, then FLUX.1 schnell on Cloudflare Workers AI) and FLUX.2 klein on Hugging Face.
 
 ## Website
 

@@ -831,7 +831,7 @@ async function* githubStream(messages) {
 }
 
 /* ---------------- pictures (no key) ----------------
-   Belgo's own /api/image function first (FLUX on Cloudflare Workers AI), then Z-Image-Turbo and FLUX.2 klein on public Hugging Face Spaces. */
+   Z-Image-Turbo on its public Hugging Face Space first, because it paints best. Then Belgo's own /api/image function (FLUX on Cloudflare Workers AI), then FLUX.2 klein on Hugging Face. */
 async function gradio(base, endpoint, data, ms = 150000) {
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
   try {
@@ -861,6 +861,11 @@ async function gradio(base, endpoint, data, ms = 150000) {
 }
 const fileUrl = (base, f) => f?.url || (f?.path ? base + '/gradio_api/file=' + f.path : '');
 const PAINTERS = [
+  { name: 'Z-Image-Turbo', async run(text) {
+      const base = 'https://tongyi-mai-z-image-turbo.hf.space';
+      const out = await gradio(base, 'generate', [text, '1024x1024 ( 1:1 )', 42, 8, 3, true, []]);
+      const first = out?.[0]?.[0]; return fileUrl(base, first?.image || first);
+    } },
   { name: "Belgo's own AI", async run(text) {
       if (!hosted) throw new Error('only works on the deployed site');
       const r = await fetch('/api/image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text }) });
@@ -871,11 +876,6 @@ const PAINTERS = [
       }
       this.label = r.headers.get('x-model') || this.name;
       return URL.createObjectURL(await r.blob());
-    } },
-  { name: 'Z-Image-Turbo', async run(text) {
-      const base = 'https://tongyi-mai-z-image-turbo.hf.space';
-      const out = await gradio(base, 'generate', [text, '1024x1024 ( 1:1 )', 42, 8, 3, true, []]);
-      const first = out?.[0]?.[0]; return fileUrl(base, first?.image || first);
     } },
   { name: 'FLUX.2 klein', async run(text) {
       const base = 'https://black-forest-labs-flux-2-klein-4b.hf.space';

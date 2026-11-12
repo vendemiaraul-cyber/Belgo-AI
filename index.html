@@ -602,7 +602,8 @@ async function* freeStream(messages) {
       yield j.text; return;
     } catch (e) {
       if (e?.name === 'AbortError') throw e;
-      ownBrain = ''; ownDown = Date.now();
+      // Daily allowance used up: stay on the backup for an hour before asking again. Other errors: two minutes.
+      ownBrain = ''; ownDown = Date.now() + (/3036|allocation|daily/i.test(e?.message || '') ? 58 * 60000 : 0);
       console.warn('Own brain unavailable:', e?.message || e);
     }
   }

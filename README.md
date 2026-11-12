@@ -16,6 +16,10 @@ A chat companion who lives on the chat bar.
 
 `index.html` is the front page ("Presenting Belgo"), with what he does and YouTube videos by other people showing the models he uses. `chat.html` is the chat itself, at `/chat`; the home screen shortcut opens it.
 
+## Intruders
+
+`guard.js` checks the address for break-in attempts (hidden files, admin pages, script or database code in the link) and sends them to `caught.html`, where Belgo gives them the L and names the cause. `404.html` runs the same check for missing pages. It is a deterrent, not a security system.
+
 ## Icons
 
 `icons/face.svg` is the browser tab icon. `icons/app-*.png` are the home screen shortcut icons, used through `manifest.webmanifest` and the apple-touch-icon link.

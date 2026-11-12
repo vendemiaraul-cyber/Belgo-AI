@@ -1,7 +1,7 @@
 {
   "name": "Belgo",
   "short_name": "Belgo",
-  "start_url": "./",
+  "start_url": "chat.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#0d0c12",

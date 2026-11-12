@@ -3,1296 +3,192 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Belgo</title>
+<title>Presenting Belgo</title>
+<meta name="description" content="Belgo is a chat companion who lives on your chat bar. He chats, builds apps, paints, finds images, reads photos and runs DOOM.">
 <link rel="icon" type="image/svg+xml" href="icons/face.svg">
 <link rel="apple-touch-icon" href="icons/app-180.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Belgo">
 <meta name="theme-color" content="#16140f">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Rubik:wght@400;500;600&display=swap">
 <style>
-/* Layout: one-screen chat. Quiet white page; the only colour is the flag figure who lives on the chat bar. */
+/* Layout: one long page. A stage where Belgo stands on a chat bar, then what he does, then other people's videos of the models he uses. */
 :root{
-  --bg:#ffffff; --surface:#f2f2ef; --surface-2:#e7e7e2; --line:#d9d9d3;
-  --ink:#16140f; --muted:#6a675f;
-  --f-black:#16140f; --f-yellow:#fdda24; --f-red:#ef3340;
-  --outline:#16140f; --danger:#c8202d;
-  --user-bg:#16140f; --user-fg:#ffffff;
-  --display:"Baloo 2","Rubik",system-ui,sans-serif;
-  --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --bg:#ffffff; --surface:#f2f2ef; --surface-2:#e7e7e2; --line:#d9d9d3; --ink:#16140f; --muted:#62605a;
+  --f-black:#16140f; --f-yellow:#fdda24; --f-red:#ef3340; --outline:#16140f;
+  --display:"Baloo 2","Rubik",system-ui,sans-serif; --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
-  :root{
-    --bg:#121110; --surface:#1f1e1b; --surface-2:#2a2925; --line:#37352f;
-    --ink:#f3f1ea; --muted:#a09c91;
-    --outline:#77736a; --danger:#ff6b74;
-    --user-bg:#fdda24; --user-fg:#16140f;
-    color-scheme:dark;
-  }
+  :root{ --bg:#121110; --surface:#1f1e1b; --surface-2:#2a2925; --line:#37352f; --ink:#f3f1ea; --muted:#a6a297; --outline:#77736a; color-scheme:dark; }
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body);-webkit-text-size-adjust:100%}
-button,input,select,textarea{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:2px solid var(--f-red);outline-offset:2px}
-[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 var(--body);-webkit-text-size-adjust:100%}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--f-red);outline-offset:3px}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);line-height:1.02;margin:0;text-wrap:balance}
+h1{font-size:clamp(54px,13vw,128px);font-weight:800;letter-spacing:-.02em}
+h1 span{display:block;font-size:.34em;font-weight:700;letter-spacing:.01em;color:var(--muted)}
+h2{font-size:clamp(30px,6vw,48px);font-weight:800}
+p{margin:0}
+.btn{display:inline-block;border:1.5px solid var(--f-black);background:var(--f-yellow);color:#16140f;border-radius:99px;padding:13px 24px;font-weight:600;font-size:17px;text-decoration:none;transition:transform .12s}
+.btn:active{transform:scale(.95)}
+.btn.ghost{background:transparent;border-color:var(--ink);color:var(--ink)}
 
-.app{height:100dvh;display:flex;flex-direction:column;max-width:760px;margin:0 auto;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-
-header{display:flex;align-items:center;gap:10px;padding-block:10px}
-h1{font:800 28px/1 var(--display);margin:0;letter-spacing:-.01em}
-.pill{display:inline-flex;align-items:center;gap:6px;min-width:0;padding:4px 10px;border-radius:99px;background:var(--surface);
-  font-size:12.5px;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pill i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--muted)}
-.pill[data-k="ready"] i{background:#2e9e5b}
-.pill[data-k="busy"] i{background:var(--f-yellow);animation:blink 1s infinite}
-.pill[data-k="err"] i{background:var(--danger)}
-@keyframes blink{50%{opacity:.3}}
-.icon-btn+.icon-btn{margin-left:0}
-.icon-btn{margin-left:auto;flex:none;width:40px;height:40px;border:0;border-radius:50%;background:transparent;display:grid;place-items:center}
-.icon-btn:hover{background:var(--surface)}
-.icon-btn svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-
-#log{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:8px 0 104px;overscroll-behavior:contain}
-.msg{max-width:88%;min-width:0;overflow-wrap:anywhere}
-.msg.user{align-self:flex-end;background:var(--user-bg);color:var(--user-fg);padding:9px 14px;border-radius:18px 18px 4px 18px;white-space:pre-wrap}
-.msg.bot{align-self:flex-start;background:var(--surface);padding:10px 14px;border-radius:18px 18px 18px 4px}
-.msg.bot p{margin:0 0 .6em}.msg.bot p:last-child{margin:0}
-.msg.bot pre{margin:.5em 0;padding:10px 12px;background:var(--surface-2);border-radius:8px;overflow-x:auto;font:13px/1.45 var(--mono)}
-.msg.bot code{font:13px var(--mono);background:var(--surface-2);padding:1px 5px;border-radius:4px}
-.msg.bot pre code{background:none;padding:0}
-.note{align-self:center;font-size:13px;color:var(--muted);text-align:center;max-width:90%}
-.note.err{color:var(--danger)}
-
-.setup{align-self:stretch;border:1.5px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
-.setup h2{font:800 22px/1.15 var(--display);margin:0;text-wrap:balance}
-.setup p{margin:0;color:var(--muted);max-width:60ch}
-.row{display:flex;flex-wrap:wrap;gap:8px}
-.btn{border:1.5px solid var(--ink);background:transparent;border-radius:99px;padding:9px 16px;font-weight:600;font-size:15px}
-.btn.primary{background:var(--f-yellow);border-color:var(--f-black);color:#16140f}
-.btn:disabled{opacity:.45;cursor:default}
-
-/* ---------- the chat bar and its resident ---------- */
-.dock{position:relative;flex:none}
-#stage{position:absolute;left:0;right:0;bottom:100%;height:0;pointer-events:none;z-index:2}
-#peg{position:absolute;left:0;bottom:-1px;width:48px;transform:translateX(var(--x,24px));transition:transform 0ms linear;
-  pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-.peg-in{position:relative}
-.peg-svg{display:block;width:48px;height:80px;overflow:visible;
-  filter:drop-shadow(1px 0 0 var(--outline)) drop-shadow(-1px 0 0 var(--outline)) drop-shadow(0 1px 0 var(--outline)) drop-shadow(0 -1px 0 var(--outline))}
-.peg-svg .part{fill:url(#flag)}
-#pLegL{transform-origin:48px 126px}#pLegR{transform-origin:72px 126px}
-#pArmL{transform-origin:22px 71px}#pArmR{transform-origin:98px 71px}
-#pHead{transform-origin:60px 54px}#pUpper{transform-origin:60px 130px}#pBody{transform-origin:60px 194px}
-.ground{position:absolute;left:8px;right:8px;bottom:-3px;height:6px;border-radius:50%;background:var(--ink);opacity:.14}
-
-/* idle */
-#peg[data-s="idle"] #pUpper{animation:breathe 3.2s ease-in-out infinite}
-@keyframes breathe{50%{transform:translateY(-2px)}}
-/* walk */
-#peg[data-s="walk"] #pBody{animation:waddle .44s ease-in-out infinite alternate}
-#peg[data-s="walk"] #pLegL{animation:swingA .44s ease-in-out infinite alternate}
-#peg[data-s="walk"] #pLegR{animation:swingB .44s ease-in-out infinite alternate}
-#peg[data-s="walk"] #pArmL{animation:swingB .44s ease-in-out infinite alternate}
-#peg[data-s="walk"] #pArmR{animation:swingA .44s ease-in-out infinite alternate}
+/* hero */
+.hero{padding-block:clamp(36px,8vw,84px) 0}
+.hero p.lead{font-size:clamp(18px,2.6vw,22px);max-width:34ch;margin-top:18px}
+.hero .row{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.stage{position:relative;margin-top:128px}
+.bar{display:flex;align-items:center;gap:10px;border:2px solid var(--outline);border-radius:26px;padding:8px 8px 8px 20px;background:var(--bg)}
+.bar span{flex:1;min-width:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar i{flex:none;width:44px;height:44px;border-radius:50%;background:var(--f-yellow);border:1.5px solid var(--f-black);display:grid;place-items:center}
+.bar svg{width:20px;height:20px;fill:none;stroke:#16140f;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.peg{position:absolute;bottom:calc(100% - 2px);left:0;width:60px;animation:stroll 14s ease-in-out infinite alternate}
+.peg svg{display:block;width:60px;height:100px;overflow:visible;filter:drop-shadow(1px 0 0 var(--outline)) drop-shadow(-1px 0 0 var(--outline)) drop-shadow(0 1px 0 var(--outline)) drop-shadow(0 -1px 0 var(--outline))}
+.peg .part{fill:url(#flag)}
+#pLegL{transform-origin:48px 126px;animation:swingA .44s ease-in-out infinite alternate}
+#pLegR{transform-origin:72px 126px;animation:swingB .44s ease-in-out infinite alternate}
+#pArmL{transform-origin:22px 71px;animation:swingB .44s ease-in-out infinite alternate}
+#pArmR{transform-origin:98px 71px;animation:wave .34s ease-in-out infinite alternate}
+#pBody{transform-origin:60px 194px;animation:waddle .44s ease-in-out infinite alternate}
+@keyframes stroll{from{left:4%}to{left:calc(96% - 60px)}}
 @keyframes waddle{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
 @keyframes swingA{from{transform:rotate(-13deg)}to{transform:rotate(13deg)}}
 @keyframes swingB{from{transform:rotate(13deg)}to{transform:rotate(-13deg)}}
-/* wave */
-#peg[data-s="wave"] #pArmR{animation:wave .32s ease-in-out infinite alternate}
-#peg[data-s="wave"] #pHead{transform:rotate(6deg)}
 @keyframes wave{from{transform:rotate(-125deg)}to{transform:rotate(-160deg)}}
-/* think: head rocks, foot taps, dots */
-#peg[data-s="think"] #pHead{animation:rock 1.5s ease-in-out infinite alternate}
-#peg[data-s="think"] #pLegR{animation:tap .38s ease-in-out infinite alternate}
-@keyframes rock{from{transform:rotate(-10deg)}to{transform:rotate(10deg)}}
-@keyframes tap{to{transform:rotate(-11deg)}}
-/* talk: bounce and gesture */
-#peg[data-s="talk"] #pBody{animation:hop .42s ease-in-out infinite alternate}
-#peg[data-s="talk"] #pArmL{animation:gestL .84s ease-in-out infinite}
-#peg[data-s="talk"] #pArmR{animation:gestR .84s ease-in-out infinite}
-@keyframes hop{to{transform:translateY(-6px)}}
-@keyframes gestL{0%,50%,100%{transform:none}25%{transform:rotate(32deg)}}
-@keyframes gestR{0%,50%,100%{transform:none}75%{transform:rotate(-32deg)}}
-/* load: carries the download bar overhead */
-#peg[data-s="load"] #pArmL{transform:rotate(166deg)}
-#peg[data-s="load"] #pArmR{transform:rotate(-166deg)}
-#peg[data-s="load"] #pBody{animation:strain .9s ease-in-out infinite alternate}
-#peg[data-s="load"] .lift{animation:strainPx .9s ease-in-out infinite alternate}
-@keyframes strain{to{transform:translateY(5px) scaleY(.975)}}
-@keyframes strainPx{to{transform:translate(-50%,2px)}}
-/* sit and sleep */
-#peg[data-s="sit"] #pBody,#peg[data-s="sleep"] #pBody{transform:translateY(43px)}
-#peg[data-s="sit"] #pLegL,#peg[data-s="sleep"] #pLegL{transform:scaleY(.36) rotate(8deg)}
-#peg[data-s="sit"] #pLegR,#peg[data-s="sleep"] #pLegR{transform:scaleY(.36) rotate(-8deg)}
-#peg[data-s="sit"] #pHead{animation:rock 2.6s ease-in-out infinite alternate}
-#peg[data-s="sleep"] #pHead{transform:rotate(17deg) translateY(3px)}
-#peg[data-s="sleep"] #pUpper{animation:snore 3.4s ease-in-out infinite}
-@keyframes snore{50%{transform:rotate(3deg) scaleY(.97)}}
-/* peek at what you type */
-#peg[data-s="peek"] #pUpper{transform:rotate(8deg);transition:transform .2s}
-#peg[data-s="peek"] #pHead{transform:rotate(13deg) translateY(4px);transition:transform .2s}
-/* shrug on error */
-#peg[data-s="shrug"] #pArmL{transform:rotate(34deg)}
-#peg[data-s="shrug"] #pArmR{transform:rotate(-34deg)}
-#peg[data-s="shrug"] #pUpper{animation:shrug .3s ease-in-out 4 alternate}
-#peg[data-s="shrug"] #pHead{transform:rotate(-9deg)}
-@keyframes shrug{to{transform:translateY(-5px)}}
-/* jump */
-#peg[data-s="jump"] .peg-in{animation:jump .55s cubic-bezier(.3,.7,.4,1)}
-#peg[data-s="jump"] #pArmL{transform:rotate(150deg)}
-#peg[data-s="jump"] #pArmR{transform:rotate(-150deg)}
-#peg[data-s="jump"] .ground{animation:shadow .55s}
-@keyframes jump{50%{transform:translateY(-30px)}}
-@keyframes shadow{50%{transform:scaleX(.5);opacity:.06}}
 
-.lift,.dots,.zz{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;display:none}
-.lift{bottom:86px;width:84px;height:16px;border:1.5px solid var(--outline);border-radius:5px;background:var(--bg);overflow:hidden}
-.lift b{position:absolute;inset:0 auto 0 0;width:var(--p,0%);background:var(--f-yellow);transition:width .3s}
-.lift span{position:absolute;inset:0;display:grid;place-items:center;font:600 10.5px/1 var(--body);color:#16140f;mix-blend-mode:normal;font-variant-numeric:tabular-nums}
-@media (prefers-color-scheme:dark){.lift span{color:var(--ink);text-shadow:0 0 3px var(--bg)}}
-#peg[data-s="load"] .lift{display:block}
-.dots{bottom:88px;gap:4px;padding:6px 8px;border-radius:12px;background:var(--surface-2)}
-#peg[data-s="think"] .dots{display:flex}
-.dots i{width:5px;height:5px;border-radius:50%;background:var(--ink);animation:dot 1s infinite}
-.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
-@keyframes dot{0%,60%,100%{opacity:.25;transform:none}30%{opacity:1;transform:translateY(-3px)}}
-.zz{bottom:52px;left:86%;font:800 14px/1 var(--display);color:var(--muted)}
-#peg[data-s="sleep"] .zz{display:block;animation:zz 2.6s ease-in-out infinite}
-@keyframes zz{from{opacity:0;transform:translate(-50%,6px) scale(.7)}40%{opacity:1}to{opacity:0;transform:translate(10%,-18px) scale(1.2)}}
+/* what he does */
+section{padding-block:clamp(56px,9vw,96px) 0}
+.does{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0 36px;margin-top:22px}
+.does div{padding:18px 0;border-top:1.5px solid var(--line)}
+.does h3{font-size:22px;font-weight:800}
+.does p{color:var(--muted);margin-top:4px;max-width:44ch}
+.does code{font:600 13px var(--body);background:var(--surface);border-radius:6px;padding:2px 7px;color:var(--ink);white-space:nowrap}
+.does small{display:block;margin-top:8px;font-size:13px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
 
-.composer{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;border:1.5px solid var(--outline);border-radius:22px;background:var(--bg);padding:6px 6px 6px 16px}
-.composer:focus-within{border-color:var(--ink)}
-#input{flex:1;min-width:0;border:0;outline:0;background:transparent;resize:none;padding:8px 0;max-height:140px;line-height:1.4}
-#input::placeholder{color:var(--muted)}
-#send{flex:none;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--f-black);background:var(--f-yellow);display:grid;place-items:center}
-#send svg{width:20px;height:20px;fill:none;stroke:#16140f;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-#send[data-stop] {background:var(--f-red)}
-#send[data-stop] svg{stroke:none;fill:#fff}
-#send:disabled{opacity:.4;cursor:default}
-.credits{margin:0;padding:8px 0 10px;text-align:center;font-size:12px;color:var(--muted)}
-.credits a{color:inherit}
+/* videos */
+.note{color:var(--muted);max-width:62ch;margin-top:12px}
+.videos{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:26px 22px;margin-top:26px}
+.video figure{margin:0}
+.player{position:relative;display:block;width:100%;aspect-ratio:16/9;border:0;padding:0;border-radius:14px;overflow:hidden;background:var(--surface-2) center/cover no-repeat;cursor:pointer}
+.player::after{content:"";position:absolute;inset:0;margin:auto;width:66px;height:66px;border-radius:50%;background:var(--f-yellow) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6.5v11l9-5.5z' fill='%2316140f'/%3E%3C/svg%3E") center/30px no-repeat;border:2px solid #16140f;transition:transform .15s}
+.player:hover::after{transform:scale(1.08)}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.player.on::after{display:none}
+.video figcaption{margin-top:10px}
+.video b{display:block;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.video span{display:block;margin-top:2px}
+.video a{display:inline-block;margin-top:4px;font-size:14px;color:var(--muted)}
 
-dialog{border:0;padding:0;background:var(--bg);color:var(--ink);border-radius:20px;width:min(480px,calc(100% - 24px));max-height:calc(100dvh - 48px)}
-dialog::backdrop{background:rgba(10,10,8,.5)}
-.sheet{padding:20px;display:flex;flex-direction:column;gap:16px}
-.sheet h2{font:800 22px/1 var(--display);margin:0}
-.sheet h3{font:600 12px/1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0}
-.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);padding:4px;border-radius:12px}
-.seg label{text-align:center;padding:8px 4px;border-radius:9px;font-weight:500;font-size:14.5px;cursor:pointer}
-.seg input{position:absolute;opacity:0}
-.seg input:checked+label{background:var(--bg);box-shadow:0 0 0 1.5px var(--ink)}
-.seg input:focus-visible+label{outline:2px solid var(--f-red)}
-.field{display:flex;flex-direction:column;gap:5px;font-size:14px}
-.field>span{font-weight:500}
-.field input,.field select{border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 11px;width:100%;min-width:0}
-.hint{font-size:13px;color:var(--muted);margin:0}
-.check{display:flex;gap:8px;align-items:center;font-size:14px}
-.group{display:flex;flex-direction:column;gap:10px}
-.sheet .credits-box{border-top:1.5px solid var(--line);padding-top:14px;font-size:14px}
-.credits-box p{margin:4px 0 0}
-
-#picBtn,#attachBtn{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center}
-#picBtn:hover,#attachBtn:hover{background:var(--surface)}
-#picBtn svg,#attachBtn svg{width:21px;height:21px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-#picBtn:disabled,#attachBtn:disabled{opacity:.4;cursor:default}
-/* game and attached photo live inside the chat bar */
-#barGame{flex:0 0 100%;margin:4px 4px 0 -6px;display:flex;flex-direction:column;gap:6px;min-width:0}
-#barGame iframe{display:block;width:100%;height:400px;max-height:56dvh;border:0;border-radius:14px;background:#000}
-#barGame.big iframe{height:72dvh;max-height:72dvh}
-#barGame a.btn{text-decoration:none;color:inherit}
-#attach{flex:0 0 100%;display:flex;align-items:center;gap:8px;margin-left:-6px;font-size:13px;color:var(--muted)}
-#attach img{width:52px;height:52px;object-fit:cover;border-radius:10px;border:1.5px solid var(--line)}
-.msg.user img{display:block;max-width:220px;width:100%;border-radius:12px;margin-bottom:6px}
-.msg.pic{padding:6px;display:flex;flex-direction:column;gap:6px}
-.msg.pic img{display:block;width:100%;max-width:384px;border-radius:13px}
-.msg.pic a,.msg.pic span{font-size:12.5px;color:var(--muted);padding:0 6px 2px}
-/* ---------- apps Belgo builds ---------- */
-.btn.sm{padding:6px 12px;font-size:13.5px}
-.msg.bot.has-app{max-width:100%;align-self:stretch;padding:8px}
-.appcard{display:flex;flex-direction:column;gap:8px;margin-top:8px}
-.app-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.app-bar strong{font:800 15px/1 var(--display);margin-right:auto}
-.appcard iframe{display:block;width:100%;height:380px;border:1.5px solid var(--outline);border-radius:10px;background:#fff}
-.appcard.big iframe{height:72dvh}
-.appcard a.btn{text-decoration:none;color:inherit}
-.appcard pre{max-height:300px;overflow:auto;margin:0}
-.msg.bot pre{max-height:420px}
-/* ---------- found images, languages, code blocks ---------- */
-.finds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
-@media (min-width:560px){.finds{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.finds a{display:block;position:relative;border-radius:10px;overflow:hidden;background:var(--surface-2);aspect-ratio:4/3;color:#fff;text-decoration:none}
-.finds img{width:100%;height:100%;object-fit:cover;display:block}
-.finds span{position:absolute;inset:auto 0 0 0;padding:14px 7px 5px;font-size:11px;line-height:1.25;background:linear-gradient(transparent,rgba(0,0,0,.72));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#langChip{flex:0 0 100%;display:flex;align-items:center;gap:8px;margin-left:-6px;font-size:13.5px}
-#langChip strong{font:800 15px/1 var(--display);background:var(--f-yellow);color:#16140f;border-radius:8px;padding:5px 9px}
-#langChip span{color:var(--muted);min-width:0;flex:1}
-#langs .grid{display:flex;flex-wrap:wrap;gap:7px}
-#langs .chip[aria-pressed="true"]{background:var(--f-yellow);color:#16140f;border-color:#16140f}
-.codebox{position:relative;margin:.5em 0}
-.codebox pre{margin:0;padding-top:30px}
-.codebox .tag{position:absolute;top:6px;left:12px;font:600 11px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.codebox button{position:absolute;top:4px;right:6px;border:0;background:transparent;font:600 12px var(--body);color:var(--muted);padding:4px 6px;border-radius:6px}
-.codebox button:hover{background:var(--surface);color:var(--ink)}
-.gamenote{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--surface);font-size:14px}
-/* ---------- refreshed UI ---------- */
-.brand{display:flex;align-items:center;gap:8px;min-width:0}
-.brand img{width:30px;height:30px;flex:none}
-.pill{transition:background .2s,color .2s}
-.icon-btn{transition:background .15s,transform .12s}
-.icon-btn:active,.btn:active,#send:active,#picBtn:active,#attachBtn:active{transform:scale(.93)}
-.btn{transition:transform .12s,background .15s}
-#send{transition:transform .12s,background .2s}
-#loadbar{flex:none;height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;opacity:0;transition:opacity .2s}
-#loadbar.on{opacity:1}
-#loadbar b{display:block;height:100%;width:45%;border-radius:99px;background:linear-gradient(90deg,var(--f-black) 0 33.4%,var(--f-yellow) 33.4% 66.7%,var(--f-red) 66.7%);animation:slide 1.15s cubic-bezier(.45,.05,.55,.95) infinite}
-@keyframes slide{from{transform:translateX(-110%)}to{transform:translateX(235%)}}
-.msg,.note,.ideas{animation:pop .24s cubic-bezier(.2,.8,.3,1.1) both}
-@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
-.msg.user{box-shadow:0 1px 0 rgba(0,0,0,.08)}
-.msg.bot.typing{display:flex;gap:5px;align-items:center;padding:14px 16px}
-.msg.bot.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:dot 1s infinite}
-.msg.bot.typing i:nth-child(2){animation-delay:.15s}.msg.bot.typing i:nth-child(3){animation-delay:.3s}
-.ideas{align-self:stretch;display:flex;flex-direction:column;gap:10px;margin-top:auto}
-.ideas h2{font:800 24px/1.1 var(--display);margin:0;text-wrap:balance}
-.ideas div{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:9px 13px;font-size:14.5px;font-weight:500;text-align:left;transition:transform .12s,border-color .15s}
-.chip:hover{border-color:var(--ink)}
-.chip:active{transform:scale(.96)}
-.composer{transition:border-color .2s,box-shadow .2s}
-.composer:focus-within{box-shadow:0 0 0 3px color-mix(in srgb,var(--f-yellow) 55%,transparent)}
-#shortcut ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
-#shortcut .shot{display:flex;align-items:center;gap:12px}
-#shortcut .shot img{width:60px;height:60px;border-radius:14px;flex:none}
-/* smoother figure: parts ease back to rest when an animation ends */
-#peg .part,#pBody,#pUpper{transition:transform .28s cubic-bezier(.3,.7,.4,1)}
-#peg[data-s="dance"] #pBody{animation:sway .5s ease-in-out infinite alternate}
-#peg[data-s="dance"] #pArmL{animation:danceL .5s ease-in-out infinite alternate}
-#peg[data-s="dance"] #pArmR{animation:danceR .5s ease-in-out infinite alternate}
-#peg[data-s="dance"] #pLegL{animation:tap .25s ease-in-out infinite alternate}
-#peg[data-s="dance"] #pHead{animation:rock .5s ease-in-out infinite alternate}
-@keyframes sway{from{transform:translateX(-4px) rotate(-5deg)}to{transform:translateX(4px) rotate(5deg)}}
-@keyframes danceL{from{transform:rotate(150deg)}to{transform:rotate(60deg)}}
-@keyframes danceR{from{transform:rotate(-60deg)}to{transform:rotate(-150deg)}}
-#peg[data-s="stretch"] #pArmL{transform:rotate(168deg)}
-#peg[data-s="stretch"] #pArmR{transform:rotate(-168deg)}
-#peg[data-s="stretch"] #pUpper{animation:reach 1.6s ease-in-out}
-@keyframes reach{40%,70%{transform:translateY(-5px) scaleY(1.04)}}
-#peg[data-s="nod"] #pHead{animation:nod .3s ease-in-out 3 alternate}
-@keyframes nod{to{transform:translateY(5px) rotate(4deg)}}
-@media (prefers-reduced-motion:reduce){.msg,.note,.ideas,#loadbar b{animation:none!important}}
-@media (prefers-reduced-motion:reduce){#peg *,#peg{animation:none!important;transition:none!important}}
+.end{padding-block:clamp(64px,10vw,110px) 0;text-align:left}
+.end p{margin-top:12px;max-width:40ch}
+.end .btn{margin-top:22px}
+footer{padding-block:48px max(36px,env(safe-area-inset-bottom,0px));color:var(--muted);font-size:14px}
+footer p{max-width:70ch}
+@media (prefers-reduced-motion:reduce){.peg,.peg *{animation:none!important}.peg{left:12%}}
 </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="brand"><img src="icons/face.svg" alt=""><h1>Belgo</h1></div>
-    <span class="pill" id="status" data-k="idle"><i></i><span id="statusText">Asleep</span></span>
-    <button class="icon-btn" id="openLangs" aria-label="Coding languages" title="Coding languages">
-      <svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 5l-3 14"/></svg>
-    </button>
-    <button class="icon-btn" id="openShortcut" aria-label="Add Belgo to your home screen" title="Add Belgo to your home screen">
-      <svg viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M6 12H5v8h14v-8h-1"/></svg>
-    </button>
-    <button class="icon-btn" id="openSettings" aria-label="Settings">
-      <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
-    </button>
-  </header>
-
-  <div id="loadbar" role="progressbar" aria-label="Belgo is working" aria-hidden="true"><b></b></div>
-
-  <main id="log" aria-live="polite">
-    <section class="ideas" id="ideas" hidden>
-      <h2>What should we do?</h2>
-      <div>
-        <button class="chip" type="button">Code me a snake game</button>
-        <button class="chip" type="button">Run DOOM</button>
-        <button class="chip" type="button">Find images of the Atomium</button>
-        <button class="chip" type="button">Open Python</button>
-        <button class="chip" type="button">What can you do?</button>
-      </div>
-    </section>
-    <section class="setup" id="setup">
-      <h2>Hi, I'm Belgo. I live on your chat bar.</h2>
-      <p id="setupText">The brain you picked is not ready yet. The free online brain works straight away with no key and no download.</p>
-      <div class="row">
-        <button class="btn primary" id="useFree">Use the free online brain</button>
-        <button class="btn" id="useGh">Connect GitHub Models</button>
-        <button class="btn" id="wake">Download my brain</button>
-      </div>
-      <p class="hint" id="setupHint"></p>
-    </section>
-  </main>
-
-  <div class="dock">
-    <div id="stage">
-      <div id="peg" data-s="idle" role="button" tabindex="0" aria-label="Belgo. Tap to say hello.">
-        <div class="lift"><b></b><span id="liftText">0%</span></div>
-        <div class="dots"><i></i><i></i><i></i></div>
-        <div class="zz">z</div>
-        <div class="peg-in">
-          <svg class="peg-svg" viewBox="0 0 120 200" aria-hidden="true">
-            <defs>
-              <linearGradient id="flag" gradientUnits="userSpaceOnUse" x1="34" y1="0" x2="86" y2="0">
-                <stop offset="0" style="stop-color:var(--f-black)"/><stop offset=".335" style="stop-color:var(--f-black)"/>
-                <stop offset=".335" style="stop-color:var(--f-yellow)"/><stop offset=".665" style="stop-color:var(--f-yellow)"/>
-                <stop offset=".665" style="stop-color:var(--f-red)"/><stop offset="1" style="stop-color:var(--f-red)"/>
-              </linearGradient>
-            </defs>
-            <g id="pBody">
-              <rect class="part" id="pLegL" x="37" y="116" width="22" height="78" rx="10"/>
-              <rect class="part" id="pLegR" x="61" y="116" width="22" height="78" rx="10"/>
-              <g id="pUpper">
-                <rect class="part" id="pArmL" x="12.5" y="62" width="18.5" height="66" rx="9.25"/>
-                <rect class="part" id="pArmR" x="89" y="62" width="18.5" height="66" rx="9.25"/>
-                <path class="part" id="pTorso" d="M34 82a22 22 0 0 1 22-22h8a22 22 0 0 1 22 22v50H34z"/>
-                <circle class="part" id="pHead" cx="60" cy="30" r="24"/>
-              </g>
-            </g>
-          </svg>
-          <div class="ground"></div>
-        </div>
-      </div>
-    </div>
-    <form class="composer" id="form">
-      <div id="barGame" hidden></div>
-      <div id="langChip" hidden><strong id="langName"></strong><span>is open. Belgo codes in it.</span><button class="btn sm" type="button" id="langClose">Close</button></div>
-      <div id="attach" hidden><img id="attachImg" alt="Attached photo"><span>Photo attached. Ask about it, or just send.</span><button class="btn sm" type="button" id="attachDrop">Remove</button></div>
-      <textarea id="input" rows="1" placeholder="Wake Belgo up first" aria-label="Message"></textarea>
-      <button id="attachBtn" type="button" aria-label="Attach a photo for Belgo to look at" title="Attach a photo for Belgo to look at">
-        <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-      </button>
-      <input type="file" id="attachFile" accept="image/*" hidden>
-      <button id="picBtn" type="button" aria-label="Paint a picture from this text" title="Paint a picture from this text">
-        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>
-      </button>
-      <button id="send" type="submit" aria-label="Send" disabled>
-        <svg viewBox="0 0 24 24" id="sendIcon"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
-      </button>
-    </form>
-    <p class="credits"><a href="welcome.html">About Belgo</a> · Inspired by Capri · Runs on <a href="https://developers.cloudflare.com/workers-ai/" target="_blank" rel="noopener">Cloudflare Workers AI</a></p>
+<header class="hero wrap">
+  <h1><span>Presenting</span>Belgo</h1>
+  <p class="lead">A small figure in black, yellow and red who lives on your chat bar. He chats, builds apps, paints, finds images, reads photos and runs DOOM.</p>
+  <div class="row">
+    <a class="btn" href="chat.html">Open Belgo</a>
+    <a class="btn ghost" href="#videos">Watch the models</a>
   </div>
-</div>
-
-<dialog id="langs" aria-labelledby="lgTitle">
-  <form class="sheet" method="dialog">
-    <h2 id="lgTitle">Open a coding language</h2>
-    <p class="hint">Pick one and Belgo writes everything in that language with his coding model. You can also type "open Python" in the chat.</p>
-    <div class="grid" id="langGrid"></div>
-    <div class="row"><button class="btn" value="cancel">Close</button></div>
-  </form>
-</dialog>
-
-<dialog id="shortcut" aria-labelledby="scTitle">
-  <form class="sheet" method="dialog">
-    <h2 id="scTitle">Put Belgo on your home screen</h2>
-    <div class="shot"><img src="icons/app-180.png" alt="Belgo's shortcut icon"><p class="hint" id="scLead">Belgo then opens like an app, with this icon.</p></div>
-    <ol id="scSteps"></ol>
-    <div class="row">
-      <button class="btn primary" type="button" id="scShare">Share Belgo</button>
-      <button class="btn" value="cancel">Close</button>
+  <div class="stage" aria-hidden="true">
+    <div class="peg">
+      <svg viewBox="0 0 120 200">
+        <defs><linearGradient id="flag" gradientUnits="userSpaceOnUse" x1="34" y1="0" x2="86" y2="0">
+          <stop offset="0" stop-color="#16140f"/><stop offset=".335" stop-color="#16140f"/>
+          <stop offset=".335" stop-color="#fdda24"/><stop offset=".665" stop-color="#fdda24"/>
+          <stop offset=".665" stop-color="#ef3340"/><stop offset="1" stop-color="#ef3340"/>
+        </linearGradient></defs>
+        <g id="pBody">
+          <rect class="part" id="pLegL" x="37" y="116" width="22" height="78" rx="10"/>
+          <rect class="part" id="pLegR" x="61" y="116" width="22" height="78" rx="10"/>
+          <rect class="part" id="pArmL" x="12.5" y="62" width="18.5" height="66" rx="9.25"/>
+          <rect class="part" id="pArmR" x="89" y="62" width="18.5" height="66" rx="9.25"/>
+          <path class="part" d="M34 82a22 22 0 0 1 22-22h8a22 22 0 0 1 22 22v50H34z"/>
+          <circle class="part" cx="60" cy="30" r="24"/>
+        </g>
+      </svg>
     </div>
-    <p class="hint" id="scMsg"></p>
-  </form>
-</dialog>
+    <div class="bar"><span>Code me a snake game</span><i><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></i></div>
+  </div>
+</header>
 
-<dialog id="settings" aria-labelledby="setTitle">
-  <form class="sheet" method="dialog" id="settingsForm">
-    <h2 id="setTitle">Belgo's brain</h2>
-    <div class="seg">
-      <input type="radio" name="mode" id="modeFree" value="free"><label for="modeFree">Own AI</label>
-      <input type="radio" name="mode" id="modeGh" value="github"><label for="modeGh">GitHub</label>
-      <input type="radio" name="mode" id="modeLocal" value="local"><label for="modeLocal">On device</label>
-    </div>
+<section class="wrap" id="does">
+  <h2>What he does</h2>
+  <div class="does">
+    <div><h3>Chats</h3><p>Ask him anything. He answers in the language you write in.</p><small>gpt-oss by OpenAI</small></div>
+    <div><h3>Builds apps</h3><p>Say <code>Code me a snake game</code> and it runs inside the chat. Tell him what to fix and he rebuilds it.</p><small>Qwen 3.8 by Alibaba</small></div>
+    <div><h3>Codes in 32 languages</h3><p>Say <code>open Python</code> and he writes everything in that language until you close it.</p><small>Qwen 3.8 by Alibaba</small></div>
+    <div><h3>Paints</h3><p>Describe a picture and he paints it at 1024 by 1024.</p><small>FLUX by Black Forest Labs · Z-Image-Turbo by Tongyi-MAI</small></div>
+    <div><h3>Finds images</h3><p>Say <code>find images of the Atomium</code> for openly licensed pictures with their sources.</p><small>Wikimedia Commons · Openverse</small></div>
+    <div><h3>Reads photos</h3><p>Attach a photo with the camera button and ask about it.</p><small>Qwen 3.8 · Gemma 4 by Google</small></div>
+    <div><h3>Runs DOOM</h3><p>Say <code>run DOOM</code> and the shareware episode plays inside the chat bar, with Belgo standing on top.</p><small>id Software · wasm port by Cornelius Diekmann</small></div>
+  </div>
+</section>
 
-    <div class="group" id="freeGroup">
-      <p class="hint">No key, no account, no download. Belgo first uses his own AI, which runs gpt-oss on this site's Cloudflare account, and the header shows "Own AI" when it answers. If that is not available he falls back to the free Pollinations text service, where your messages are then sent.</p>
-    </div>
+<section class="wrap" id="videos">
+  <h2>The models behind him</h2>
+  <p class="note">Belgo borrows his skills from open models. These videos are by other people on YouTube and show those models at work. They are not recordings of Belgo himself.</p>
+  <div class="videos">
+    <div class="video"><figure>
+      <button class="player" data-id="y2ZVOtWWR9Y" aria-label="Play: Qwen 3.8 Built Rocket League From One Prompt"></button>
+      <figcaption><b>Builds apps · Qwen 3.8</b><span>Qwen 3.8 Built Rocket League From One Prompt. Then Got All Night.</span><a href="https://www.youtube.com/shorts/y2ZVOtWWR9Y" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+    <div class="video"><figure>
+      <button class="player" data-id="m8HFQ8cZlTU" aria-label="Play: I Made Qwen 3.8 and Claude Opus 5 Build the Same Game"></button>
+      <figcaption><b>Builds apps · Qwen 3.8</b><span>I Made Qwen 3.8 and Claude Opus 5 Build the Same Game</span><a href="https://www.youtube.com/watch?v=m8HFQ8cZlTU" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+    <div class="video"><figure>
+      <button class="player" data-id="w_1ZIXdDxlQ" aria-label="Play: OpenAI's Opensource OSS 120B and 20B, Fully Tested"></button>
+      <figcaption><b>Chats · gpt-oss</b><span>OpenAI's Opensource OSS 120B &amp; 20B (Fully Tested)</span><a href="https://www.youtube.com/watch?v=w_1ZIXdDxlQ" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+    <div class="video"><figure>
+      <button class="player" data-id="JXgBe3twxbc" aria-label="Play: Flux 2 Klein Just Dropped"></button>
+      <figcaption><b>Paints · FLUX.2 klein</b><span>Flux 2 Klein Just Dropped. This Image Editing Model Isn't Just About Speed!</span><a href="https://www.youtube.com/watch?v=JXgBe3twxbc" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+    <div class="video"><figure>
+      <button class="player" data-id="sPQQPpQ9X4E" aria-label="Play: Z Image Turbo, free open-source image model"></button>
+      <figcaption><b>Paints · Z-Image-Turbo</b><span>Z Image Turbo (FREE): This Open-Source AI Changed Image Generation Forever!</span><a href="https://www.youtube.com/watch?v=sPQQPpQ9X4E" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+    <div class="video"><figure>
+      <button class="player" data-id="uYSybTDO5qY" aria-label="Play: Cerebras Inference in 30 seconds"></button>
+      <figcaption><b>Answers fast · Cerebras</b><span>Cerebras Inference in 30 seconds</span><a href="https://www.youtube.com/watch?v=uYSybTDO5qY" target="_blank" rel="noopener">Watch on YouTube</a></figcaption>
+    </figure></div>
+  </div>
+</section>
 
-    <div class="group" id="ghGroup">
-      <label class="field"><span>GitHub token</span><input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off"></label>
-      <label class="field"><span>Model</span><input id="ghModel" type="text" list="ghModels" autocomplete="off" autocapitalize="off">
-        <datalist id="ghModels"><option value="openai/gpt-4.1-mini"></option><option value="openai/gpt-4.1"></option><option value="meta/llama-4-scout-17b-16e-instruct"></option><option value="mistral-ai/mistral-medium-2505"></option></datalist></label>
-      <label class="check"><input type="checkbox" id="ghRemember"> Remember the token in this browser</label>
-      <p class="hint">To get a token: on GitHub open Settings, Developer settings, Personal access tokens, Fine-grained tokens, and generate one with the account permission Models set to Read-only. It is free, with a daily limit (about 150 answers on the small models). The token goes only from this page to GitHub. Your messages are sent to GitHub Models.</p>
-    </div>
+<section class="wrap end">
+  <h2>Go and meet him</h2>
+  <p>No account and no download. Type in the chat bar and he gets to work.</p>
+  <a class="btn" href="chat.html">Open Belgo</a>
+</section>
 
-    <div class="group" id="localGroup">
-      <label class="field"><span>Model</span><select id="model"></select></label>
-      <p class="hint">Runs on your device's processor with wllama, so it works in any modern browser. Bigger models answer better but are slower and need more memory. Each one downloads once. If a model fails to load, Belgo tries the next smaller one by himself.</p>
-    </div>
+<footer class="wrap">
+  <p>Inspired by Capri. Belgo runs on Cloudflare Workers AI and Cerebras, with gpt-oss (OpenAI), Qwen 3.8 (Alibaba), Gemma 4 (Google), FLUX (Black Forest Labs) and Z-Image-Turbo (Tongyi-MAI). DOOM by id Software. The videos belong to their creators on YouTube.</p>
+</footer>
 
-    <div class="row">
-      <button class="btn primary" value="save" id="saveSettings">Save</button>
-      <button class="btn" value="cancel" formnovalidate>Cancel</button>
-      <button class="btn" type="button" id="clearChat" style="margin-left:auto">Clear chat</button>
-    </div>
-
-    <div class="credits-box">
-      <h3>Credits</h3>
-      <p>Belgo was inspired by <strong>Capri</strong>. Thank you to its makers for the idea of an assistant with a body.</p>
-      <p>Belgo's own AI runs <a href="https://developers.cloudflare.com/workers-ai/models/gpt-oss-120b/" target="_blank" rel="noopener">gpt-oss</a> by OpenAI and FLUX by Black Forest Labs on Cloudflare Workers AI. Apps are written by Qwen 3.8 (Alibaba) or GLM-4.7 Flash (Z.ai), or Kimi K2.7 Code (Moonshot AI) on a paid Cloudflare plan.</p>
-      <p>Text answers come from <a href="https://cloud.cerebras.ai" target="_blank" rel="noopener">Cerebras</a> (gpt-oss, then Qwen 3.8) when its key is set. Photos are read by Qwen 3.8 or Gemma 4 on Workers AI.</p>
-      <p>DOOM runs on the <a href="https://github.com/diekmann/wasm-fizzbuzz" target="_blank" rel="noopener">wasm port by Cornelius Diekmann</a> (GPL source, id Software shareware data). Quake II runs on <a href="https://github.com/GMH-Code/Quake2-WASM" target="_blank" rel="noopener">Qwasm2 by GMH-Code</a>, with id Software's demo.</p>
-      <p>Found images come from <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a> and <a href="https://openverse.org" target="_blank" rel="noopener">Openverse</a>.</p>
-      <p>Backup answers come from <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations</a>; the GitHub option uses <a href="https://github.com/marketplace/models" target="_blank" rel="noopener">GitHub Models</a>.</p>
-      <p>On-device answers run on <a href="https://github.com/ngxson/wllama" target="_blank" rel="noopener">wllama</a> by Xuan Son Nguyen, built on llama.cpp.</p>
-      <p>Pictures are painted by <a href="https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo" target="_blank" rel="noopener">Z-Image-Turbo</a> (Tongyi-MAI) and <a href="https://huggingface.co/spaces/black-forest-labs/FLUX.2-klein-4B" target="_blank" rel="noopener">FLUX.2 klein</a> (Black Forest Labs) on their public Hugging Face Spaces.</p>
-    </div>
-  </form>
-</dialog>
-
-<script type="module">
-const $ = s => document.querySelector(s);
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-
-/* ---------------- settings ---------------- */
-const LS = 'belgo.settings.v3';
-const MODELS = [
-  { id: 'smol360', label: 'SmolLM2 360M', note: '0.3 GB, lightest, English only', repo: 'bartowski/SmolLM2-360M-Instruct-GGUF', file: 'SmolLM2-360M-Instruct-Q4_K_M.gguf' },
-  { id: 'qwen05', label: 'Qwen 2.5 0.5B', note: '0.5 GB, light', repo: 'Qwen/Qwen2.5-0.5B-Instruct-GGUF', file: 'qwen2.5-0.5b-instruct-q4_k_m.gguf' },
-  { id: 'llama1', label: 'Llama 3.2 1B', note: '0.8 GB, balanced', repo: 'bartowski/Llama-3.2-1B-Instruct-GGUF', file: 'Llama-3.2-1B-Instruct-Q4_K_M.gguf' },
-  { id: 'qwen15', label: 'Qwen 2.5 1.5B', note: '1.1 GB, smartest, slow on phones', repo: 'Qwen/Qwen2.5-1.5B-Instruct-GGUF', file: 'qwen2.5-1.5b-instruct-q4_k_m.gguf' },
-];
-const onPhone = matchMedia('(pointer:coarse)').matches;
-const cfg = { mode: 'free', ghModel: 'openai/gpt-4.1-mini', token: '', remember: false, model: onPhone ? 'qwen05' : 'llama1' };
-try {
-  const saved = JSON.parse(localStorage.getItem(LS) || '{}');
-  if (MODELS.some(m => m.id === saved.model)) cfg.model = saved.model;
-  if (['free', 'local', 'github'].includes(saved.mode)) cfg.mode = saved.mode;
-  if (saved.ghModel) cfg.ghModel = saved.ghModel;
-  if (saved.remember && saved.token) { cfg.token = saved.token; cfg.remember = true; }
-} catch {}
-function saveCfg() {
-  try { localStorage.setItem(LS, JSON.stringify({ mode: cfg.mode, model: cfg.model, ghModel: cfg.ghModel, remember: cfg.remember, token: cfg.remember ? cfg.token : '' })); } catch {}
-}
-const modelInfo = () => MODELS.find(m => m.id === cfg.model) || MODELS[1];
-
-/* ---------------- the figure ---------------- */
-const Peg = (() => {
-  const el = $('#peg'), stage = $('#stage');
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let base = 'idle', temp = null, tTimer = 0, idleTimer = 0, x = 24, lastAct = Date.now();
-  const apply = () => { el.dataset.s = temp || base; };
-  const maxX = () => Math.max(8, stage.clientWidth - el.offsetWidth - 8);
-  function place(nx, ms) {
-    x = clamp(nx, 8, maxX());
-    el.style.transitionDuration = ms + 'ms';
-    el.style.setProperty('--x', x + 'px');
-  }
-  function freeze() {
-    const m = new DOMMatrixReadOnly(getComputedStyle(el).transform);
-    place(m.m41, 0);
-  }
-  function clearTemp() { clearTimeout(tTimer); if (temp === 'walk') freeze(); temp = null; }
-  function flash(s, ms) {
-    if (base !== 'idle') return;
-    clearTemp(); temp = s; apply();
-    tTimer = setTimeout(() => { temp = null; apply(); }, ms);
-  }
-  function walkTo(nx) {
-    if (reduce || base !== 'idle') return;
-    clearTemp();
-    nx = clamp(nx, 8, maxX());
-    const ms = Math.max(300, Math.abs(nx - x) * 26);
-    place(nx, ms); temp = 'walk'; apply();
-    tTimer = setTimeout(() => { temp = null; apply(); }, ms);
-  }
-  function schedule() { clearTimeout(idleTimer); idleTimer = setTimeout(tick, 3500 + Math.random() * 5000); }
-  function tick() {
-    if (base === 'idle' && !temp) {
-      if (Date.now() - lastAct > 75000) { temp = 'sleep'; apply(); return; }
-      const r = Math.random();
-      if (r < .42) walkTo(8 + Math.random() * (maxX() - 8));
-      else if (r < .55) flash('wave', 1700);
-      else if (r < .72) flash('sit', 6500);
-      else if (r < .82) flash('stretch', 1600);
-      else if (r < .92) flash('dance', 2600);
-      else flash('peek', 1500);
-    }
-    schedule();
-  }
-  function poke() {
-    lastAct = Date.now();
-    if (temp === 'sleep') { temp = null; apply(); schedule(); }
-  }
-  function setBase(s) { clearTemp(); base = s; apply(); lastAct = Date.now(); schedule(); }
-  function hello() { poke(); flash('jump', 560); setTimeout(() => flash('wave', 1500), 580); }
-  el.addEventListener('click', hello);
-  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hello(); } });
-  addEventListener('resize', () => { if (temp !== 'walk') place(x, 0); });
-  place(24, 0); schedule();
-  return { setBase, flash, poke, hello, progress(p) { el.style.setProperty('--p', Math.round(p * 100) + '%'); $('#liftText').textContent = Math.round(p * 100) + '%'; } };
-})();
-
-/* ---------------- chat state and rendering ---------------- */
-const BUILD = '\n\nYou can build small web apps, games and tools that run right inside the chat. When the user asks you to build, make or code one, reply with one short sentence and then the complete app as a single HTML document inside one ```html code block. Put all CSS and JavaScript inline in that document. Do not load anything from other websites: no external scripts, fonts or images. Make it work with both mouse and touch, and fit a small screen. When the user asks for a change or reports a bug, send the whole corrected document again.';
-const SEEHINT = '\n\nThe user can attach a photo with the camera button and you can then see and describe it.';
-const FINDHINT = '\n\nYou can find existing images on the web: the user writes "find images of ..." and they appear in the chat. You can open a coding language: the user writes "open Python" (or any language) or taps the code button, and you then code in it.';
-const GAMEHINT = '\n\nYou have two games the user can play in the chat: DOOM and Quake II. They start when the user writes "run DOOM" or "play Quake II"; tell them that if they ask what you can play.';
-const SYSTEM = 'You are Belgo, a small cheerful figure painted in the black, yellow and red of the Belgian flag. You live on top of the chat bar. Be friendly, clear and concise. Reply in the language the user writes in.';
-const log = $('#log'), input = $('#input'), sendBtn = $('#send');
-let history = [], busy = false, loading = false, engine = null, engineId = '', aborter = null, stopLocal = false, stopped = false, painting = false, pendingImg = '';
-
-const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-function inline(s) {
-  return esc(s).replace(/\[\[([^\]\n]+)\]\]/g, '<code class="act">$1</code>').replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>');
-}
-function md(src) {
-  return src.split(/```/).map((part, i) => {
-    if (i % 2) { const lang = (/^([\w+#-]*)\n/.exec(part) || [])[1] || ''; return '<pre data-lang="' + esc(lang) + '"><code>' + esc(part.replace(/^[\w+#-]*\n/, '')) + '</code></pre>'; }
-    return part.split(/\n{2,}/).filter(p => p.trim()).map(p => '<p>' + inline(p.trim()).replace(/\n/g, '<br>') + '</p>').join('');
-  }).join('');
-}
-const nearBottom = () => log.scrollHeight - log.scrollTop - log.clientHeight < 140;
-function add(cls, text) {
-  const d = document.createElement('div');
-  d.className = cls; d.textContent = text;
-  log.append(d); log.scrollTop = log.scrollHeight;
-  return d;
-}
-const note = (t, err) => add('note' + (err ? ' err' : ''), t);
-
-const onGh = () => cfg.mode === 'github';
-const onFree = () => cfg.mode === 'free';
-function isReady() { return onFree() || (onGh() ? !!cfg.token : !!engine); }
-function setStatus(kind, text) { $('#status').dataset.k = kind; $('#statusText').textContent = text; }
-function refresh() {
-  const ready = isReady();
-  $('#setup').hidden = ready || loading || history.length > 0;
-  if (!loading && !busy) {
-    if (ready) setStatus('ready', onFree() ? (ownBrain ? 'Own AI · ' + ownBrain : 'Online') : onGh() ? 'GitHub · ' + cfg.ghModel.split('/').pop() : 'On device · ' + ((MODELS.find(m => m.id === engineId) || modelInfo()).label));
-    else setStatus('idle', 'Asleep');
-  }
-  $('#loadbar').classList.toggle('on', busy || loading || painting);
-  $('#ideas').hidden = !ready || busy || history.length > 0 || !!log.querySelector('.msg');
-  input.placeholder = ready ? (codeLang ? 'What should Belgo code in ' + codeLang.split(' ')[0] + '?' : 'Message Belgo') : (loading ? 'Belgo is loading…' : 'Wake Belgo up first');
-  sendBtn.disabled = !busy && !(pendingImg || (ready && input.value.trim()));
-  $('#attachBtn').disabled = busy;
-  $('#picBtn').disabled = busy || painting || !input.value.trim();
-  if (busy) { sendBtn.dataset.stop = ''; sendBtn.setAttribute('aria-label', 'Stop'); $('#sendIcon').innerHTML = '<rect x="7" y="7" width="10" height="10" rx="2"/>'; }
-  else { delete sendBtn.dataset.stop; sendBtn.setAttribute('aria-label', 'Send'); $('#sendIcon').innerHTML = '<path d="M12 19V5M6 11l6-6 6 6"/>'; }
-  $('#wake').textContent = 'Download my brain (' + modelInfo().note.split(',')[0] + ')';
-  $('#setupHint').textContent = '';
-}
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-/* ---------------- on-device brain (wllama) ---------------- */
-/* wllama runs llama.cpp as WebAssembly on the processor. It does not touch the graphics card,
-   which is where the on-device brain used to crash, and it works in every modern browser. */
-const WL = 'https://cdn.jsdelivr.net/npm/@wllama/wllama@3.13.0/esm/';
-let wllamaLib = null;
-async function getWllama() {
-  if (wllamaLib) return wllamaLib;
-  let last;
-  for (const url of [WL + 'index.js', 'https://esm.run/@wllama/wllama@3.13.0', 'https://unpkg.com/@wllama/wllama@3.13.0/esm/index.js']) {
-    try { const m = await import(url); if (m.Wllama) return (wllamaLib = m); } catch (e) { last = e; }
-  }
-  throw new Error('The wllama library could not be downloaded. Check your connection. ' + (last?.message || ''));
-}
-async function loadLocal() {
-  if (loading) return;
-  cfg.mode = 'local'; saveCfg();
-  loading = true; Peg.progress(0); Peg.setBase('load'); setStatus('busy', 'Loading 0%'); refresh();
-  try {
-    try { await navigator.storage?.persist?.(); } catch {}
-    const { Wllama } = await getWllama();
-    if (engine) { try { await engine.exit(); } catch {} engine = null; }
-    /* One attempt: download, then start the model inside the worker. Starting gives no progress of its own,
-       so Belgo counts the seconds, listens for worker errors, and gives up after a limit instead of hanging at 100%. */
-    const attempt = async (m, single) => {
-      let fail, timer, phase = 'download', t0 = 0, lastTick = Date.now();
-      const failed = new Promise((_, no) => { fail = no; });
-      const logger = { debug() {}, log() {}, warn() {},
-        error: (...a) => {
-          const t = a.map(x => x?.message || (typeof x === 'string' ? x : '')).join(' ');
-          if (a.some(x => x instanceof ErrorEvent || x instanceof Error) || /out of memory|abort\(|unreachable|RangeError/i.test(t)) fail(new Error(t || 'The brain stopped while starting.'));
-        } };
-      const w = new Wllama({ default: WL + 'wasm/wllama.wasm' }, { logger });
-      const watchdog = new Promise((_, no) => {
-        timer = setInterval(() => {
-          if (phase === 'download' && Date.now() - lastTick > 20000 && t0) phase = 'start';
-          if (phase !== 'start') return;
-          const sec = Math.round((Date.now() - t0) / 1000);
-          setStatus('busy', 'Starting brain ' + sec + 's'); $('#liftText').textContent = sec + 's';
-          if (sec > 120) no(new Error('Starting ' + m.label + ' took too long on this device.'));
-        }, 1000);
-      });
-      const load = w.loadModelFromHF({ repo: m.repo, file: m.file }, {
-        n_ctx: 2048, n_batch: 256, n_parallel: 1, n_gpu_layers: 0, ...(single ? { n_threads: 1 } : {}),
-        progressCallback: ({ loaded, total }) => {
-          lastTick = Date.now();
-          const p = total ? loaded / total : 0;
-          if (p >= 0.999) { if (phase !== 'start') { phase = 'start'; t0 = Date.now(); } return; }
-          Peg.progress(p); setStatus('busy', 'Downloading ' + Math.round(p * 100) + '%');
-        }
-      });
-      load.catch(() => {});
-      try { await Promise.race([load, failed, watchdog]); return w; }
-      catch (e) { try { await w.exit(); } catch {} throw e; }
-      finally { clearInterval(timer); }
-    };
-    /* Try the chosen model, then on one processor core, then each smaller model. */
-    const at = Math.max(0, MODELS.findIndex(m => m.id === cfg.model));
-    const plan = [];
-    MODELS.slice(0, at + 1).reverse().forEach((m, i) => {
-      if (i === 0 && self.crossOriginIsolated) plan.push([m, false]);
-      plan.push([m, true]);
-    });
-    let lastErr = null;
-    for (let i = 0; i < plan.length; i++) {
-      const [m, single] = plan[i];
-      if (i > 0) note(plan[i - 1][0] === m ? m.label + ' did not start, so Belgo is trying again more carefully.' : plan[i - 1][0].label + ' did not start here, so Belgo is trying ' + m.label + '.');
-      try { Peg.progress(0); engine = await attempt(m, single); engineId = m.id; lastErr = null; break; }
-      catch (e) {
-        lastErr = e;
-        if (e instanceof TypeError || /fetch|network|quota/i.test(e?.message || '')) break;
-      }
-    }
-    if (!engine) throw lastErr || new Error('No model could be loaded.');
-    loading = false; Peg.setBase('idle'); refresh();
-    note('Belgo is awake. Everything you write stays on this device.');
-    Peg.hello(); input.focus();
-  } catch (e) {
-    loading = false; engine = null; Peg.setBase('idle'); refresh();
-    setStatus('err', 'Could not load');
-    const m = e?.message || String(e);
-    const why = /quota/i.test(m) ? ' This device is out of storage space for the model. Free some space or pick a smaller model in settings.'
-      : (e instanceof TypeError || /fetch|network/i.test(m)) ? ' The download was interrupted. Check your connection and press the button again.'
-      : ' Close other tabs to free memory, or pick a smaller model in settings.';
-    note('The brain did not load: ' + m + why, true);
-    Peg.flash('shrug', 1400);
-  }
-}
-
-/* ---------------- answering ---------------- */
-async function* localStream(messages) {
-  aborter = new AbortController();
-  try {
-    const stream = await engine.createChatCompletion({ messages, stream: true, max_tokens: 600, temperature: 0.7, abortSignal: aborter.signal });
-    for await (const ch of stream) {
-      if (stopped) break;
-      const t = ch.choices?.[0]?.delta?.content;
-      if (t) yield t;
-    }
-  } catch (e) {
-    if (stopped || aborter.signal.aborted) return;
-    const m = e?.message || String(e);
-    if (/memory|oom|abort|unreachable|exit|terminated/i.test(m)) {
-      try { await engine.exit(); } catch {}
-      engine = null; engineId = '';
-      throw new Error("Belgo's brain stopped, most likely out of memory. Wake him up again, or pick a smaller model in settings.");
-    }
-    throw e;
-  }
-}
-/* Free online brain: no key. Tries the chat endpoint first, then the plain link form, and waits when the service asks to. */
-async function freeOnce(messages, signal) {
-  const post = () => fetch('https://text.pollinations.ai/openai', {
-    method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'openai-fast', messages })
+<script>
+/* Videos load only when tapped: a thumbnail first, then the YouTube player in its place. */
+document.querySelectorAll('.player').forEach(function (b) {
+  var id = b.dataset.id;
+  b.style.backgroundImage = 'url(https://i.ytimg.com/vi/' + id + '/hqdefault.jpg)';
+  b.addEventListener('click', function () {
+    if (b.classList.contains('on')) return;
+    var f = document.createElement('iframe');
+    f.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1';
+    f.title = b.getAttribute('aria-label').replace(/^Play: /, '');
+    f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    f.allowFullscreen = true;
+    b.classList.add('on'); b.style.backgroundImage = 'none'; b.append(f);
   });
-  const get = () => {
-    const sys = messages.find(m => m.role === 'system')?.content || '';
-    const talk = messages.filter(m => m.role !== 'system').slice(-6).map(m => (m.role === 'user' ? 'User: ' : 'Belgo: ') + m.content).join('\n').slice(-1800);
-    return fetch('https://text.pollinations.ai/' + encodeURIComponent(talk + '\nBelgo:') + '?model=openai-fast&system=' + encodeURIComponent(sys.slice(0, 600)), { signal });
-  };
-  let res, viaGet = false;
-  try { res = await post(); } catch (e) { if (e?.name === 'AbortError') throw e; res = null; }
-  if (!res || (!res.ok && res.status !== 402 && res.status !== 429)) { viaGet = true; res = await get(); }
-  if (res.status === 402 || res.status === 429) return { wait: clamp(+res.headers.get('retry-after') || 20, 5, 45) };
-  if (!res.ok) throw new Error('The free service answered ' + res.status + '.');
-  if (viaGet) return { text: (await res.text()).trim() };
-  const raw = await res.text();
-  try { const j = JSON.parse(raw); return { text: (j.choices?.[0]?.message?.content || '').trim() }; } catch { return { text: raw.trim() }; }
-}
-/* Belgo's own brain: the /api/chat function that ships with this site and runs gpt-oss on Cloudflare Workers AI. */
-const hosted = /^https?:$/.test(location.protocol);
-let ownBrain = '', ownDown = 0;
-/* Building requests go to a coding model: the user asks to make something, or the chat already holds an app. */
-function isCoding(messages) {
-  if (codeLang) return true;
-  const talk = messages.filter(m => m.role !== 'system');
-  const last = [...talk].reverse().find(m => m.role === 'user')?.content || '';
-  if (/\b(build|code|program|script|game|app|website|web ?page|html|css|javascript|calculator|bug|fix)\b/i.test(last)) return true;
-  return talk.some(m => m.role === 'assistant' && /```html|<!doctype html/i.test(m.content));
-}
-async function ownChat(messages, signal, image) {
-  const r = await fetch('/api/chat', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(image ? { messages, task: 'vision', image } : { messages, task: isCoding(messages) ? 'code' : 'chat' }) });
-  if (!/json/i.test(r.headers.get('content-type') || '')) throw new Error('this site has no server code deployed');
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.text) throw new Error(j.error || 'answered ' + r.status);
-  return j;
-}
-async function* freeStream(messages) {
-  aborter = new AbortController();
-  if (hosted && Date.now() - ownDown > 120000) {
-    try {
-      const j = await ownChat(messages, aborter.signal);
-      ownBrain = j.model || 'own AI';
-      yield j.text; return;
-    } catch (e) {
-      if (e?.name === 'AbortError') throw e;
-      // Daily allowance used up: stay on the backup for an hour before asking again. Other errors: two minutes.
-      ownBrain = ''; ownDown = Date.now() + (/3036|allocation|daily/i.test(e?.message || '') ? 58 * 60000 : 0);
-      console.warn('Own brain unavailable:', e?.message || e);
-    }
-  }
-  for (let attempt = 0; attempt < 4; attempt++) {
-    let r;
-    try { r = await freeOnce(messages, aborter.signal); }
-    catch (e) {
-      if (e?.name === 'AbortError') throw e;
-      if (e instanceof TypeError) throw new Error('Belgo could not reach the free online brain. Check your connection and try again.');
-      throw e;
-    }
-    if (r.text) { yield r.text; return; }
-    if (!r.wait) return;
-    for (let left = r.wait; left > 0; left--) {
-      if (stopped) throw new DOMException('Stopped', 'AbortError');
-      setStatus('busy', 'Busy, trying again in ' + left + 's'); await sleep(1000);
-    }
-    setStatus('busy', 'Thinking');
-  }
-  throw new Error('The free online brain is too busy right now. Wait a minute and ask again.');
-}
-async function* githubStream(messages) {
-  aborter = new AbortController();
-  let res;
-  try {
-    res = await fetch('https://models.github.ai/inference/chat/completions', {
-      method: 'POST', signal: aborter.signal,
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + cfg.token },
-      body: JSON.stringify({ model: cfg.ghModel, messages, stream: true, max_tokens: 1200 })
-    });
-  } catch (e) {
-    if (e?.name === 'AbortError') throw e;
-    throw new Error('Belgo could not reach GitHub Models from this page. Check your connection.');
-  }
-  if (!res.ok) {
-    let detail = ''; try { const j = await res.json(); detail = j.error?.message || j.message || ''; } catch {}
-    if (res.status === 401 || res.status === 403) throw new Error('GitHub did not accept the token. Check in settings that it is pasted fully and has the Models permission set to Read-only.');
-    if (res.status === 429) throw new Error('The free GitHub Models limit is used up for now. Try again later or pick another model in settings.');
-    if (res.status === 404 || res.status === 400) throw new Error('GitHub does not know the model "' + cfg.ghModel + '". Pick another in settings.' + (detail ? ' (' + detail + ')' : ''));
-    throw new Error('GitHub Models answered ' + res.status + (detail ? ': ' + detail : '') + '.');
-  }
-  if (/json/i.test(res.headers.get('content-type') || '')) {
-    const j = await res.json(); const t = j.choices?.[0]?.message?.content; if (t) yield t; return;
-  }
-  const reader = res.body.getReader(), dec = new TextDecoder();
-  let buf = '';
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    const lines = buf.split('\n'); buf = lines.pop();
-    for (const line of lines) {
-      const row = line.trim();
-      if (!row.startsWith('data:')) continue;
-      const data = row.slice(5).trim();
-      if (data === '[DONE]') return;
-      try { const t = JSON.parse(data).choices?.[0]?.delta?.content; if (t) yield t; } catch {}
-    }
-  }
-}
-
-/* ---------------- pictures (no key) ----------------
-   Belgo's own /api/image function first (FLUX on Cloudflare Workers AI), then Z-Image-Turbo and FLUX.2 klein on public Hugging Face Spaces. */
-async function gradio(base, endpoint, data, ms = 150000) {
-  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
-  try {
-    const url = base + '/gradio_api/call/' + endpoint;
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data }), signal: ctl.signal });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok || !j.event_id) throw new Error(j.detail || j.error || 'answered ' + r.status);
-    const res = await fetch(url + '/' + j.event_id, { signal: ctl.signal });
-    const reader = res.body.getReader(), dec = new TextDecoder();
-    let buf = '', event = '';
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split('\n'); buf = lines.pop();
-      for (const line of lines) {
-        if (line.startsWith('event:')) event = line.slice(6).trim();
-        else if (line.startsWith('data:')) {
-          let d = null; try { d = JSON.parse(line.slice(5)); } catch {}
-          if (event === 'complete') return d;
-          if (event === 'error') throw new Error((typeof d === 'string' ? d : d?.error || d?.message) || 'busy or over its free limit');
-        }
-      }
-    }
-    throw new Error('ended without a picture');
-  } finally { clearTimeout(timer); }
-}
-const fileUrl = (base, f) => f?.url || (f?.path ? base + '/gradio_api/file=' + f.path : '');
-const PAINTERS = [
-  { name: "Belgo's own AI", async run(text) {
-      if (!hosted) throw new Error('only works on the deployed site');
-      const r = await fetch('/api/image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text }) });
-      const type = r.headers.get('content-type') || '';
-      if (!r.ok || !type.startsWith('image/')) {
-        const j = /json/i.test(type) ? await r.json().catch(() => ({})) : {};
-        throw new Error(j.error || 'this site has no server code deployed');
-      }
-      this.label = r.headers.get('x-model') || this.name;
-      return URL.createObjectURL(await r.blob());
-    } },
-  { name: 'Z-Image-Turbo', async run(text) {
-      const base = 'https://tongyi-mai-z-image-turbo.hf.space';
-      const out = await gradio(base, 'generate', [text, '1024x1024 ( 1:1 )', 42, 8, 3, true, []]);
-      const first = out?.[0]?.[0]; return fileUrl(base, first?.image || first);
-    } },
-  { name: 'FLUX.2 klein', async run(text) {
-      const base = 'https://black-forest-labs-flux-2-klein-4b.hf.space';
-      const out = await gradio(base, 'infer', [text, [], 'Distilled (4 steps)', 0, true, 1024, 1024, 4, 1, false]);
-      return fileUrl(base, out?.[0]);
-    } },
-];
-const showImg = (im, url) => new Promise((ok, no) => { im.onload = ok; im.onerror = () => no(new Error('the picture did not load')); im.src = url; });
-const Pic = {
-  prompt: '\n\nYou can paint a picture. Write [[image: a clear description of the picture in English]] on its own line. Do this only when the user asks for a picture, image or drawing.',
-  async make(text) {
-    text = String(text || '').trim();
-    if (!text) return 'No description was given.';
-    const box = add('msg bot pic', ''), label = document.createElement('span');
-    box.append(label);
-    const t0 = Date.now(); let who = PAINTERS[0].name;
-    const tick = setInterval(() => { label.textContent = 'Painting with ' + who + '… ' + Math.round((Date.now() - t0) / 1000) + 's'; }, 1000);
-    label.textContent = 'Painting…';
-    const why = [];
-    try {
-      for (const painter of PAINTERS) {
-        who = painter.name;
-        try {
-          const url = await painter.run(text);
-          if (!url) throw new Error('no picture came back');
-          const im = new Image(); im.alt = text;
-          await showImg(im, url);
-          box.textContent = '';
-          const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Made with ' + (painter.label || painter.name) + ' · Open full size';
-          box.append(im, a); log.scrollTop = log.scrollHeight;
-          return 'The picture is finished and is showing in the chat.';
-        } catch (e) { why.push(painter.name + ': ' + String(e?.message || e).slice(0, 120)); }
-      }
-      box.remove();
-      const m = 'No painter could make the picture. ' + why.join(' · ');
-      note(m, true); return 'The picture failed.';
-    } finally { clearInterval(tick); }
-  }
-};
-async function paint(text) {
-  painting = true; refresh();
-  if (!busy) Peg.setBase('think');
-  const res = await Pic.make(text);
-  painting = false;
-  if (!busy) { Peg.setBase('idle'); refresh(); /finished/.test(res) ? Peg.hello() : Peg.flash('shrug', 1400); }
-  return res;
-}
-
-/* Apps: when an answer holds an HTML document, run it in a locked-down frame inside the chat. */
-function findApp(out) {
-  const re = /```([a-zA-Z]*)[ \t]*\n([\s\S]*?)(```|$)/g;
-  let m;
-  while ((m = re.exec(out))) {
-    const lang = m[1].toLowerCase(), code = m[2].trim();
-    if ((lang === 'html' || lang === '') && /<!doctype html|<html[\s>]|<body[\s>]|<script[\s>]|<canvas[\s>]/i.test(code))
-      return { code, rest: (out.slice(0, m.index) + out.slice(m.index + m[0].length)).trim(), cut: m[3] === '' };
-  }
-  return null;
-}
-function showApp(bubble, out) {
-  const app = findApp(out);
-  if (!app || !bubble) return false;
-  bubble.classList.add('has-app');
-  bubble.innerHTML = md(app.rest || 'Here it is.');
-  const card = document.createElement('div'); card.className = 'appcard';
-  const bar = document.createElement('div'); bar.className = 'app-bar';
-  const title = document.createElement('strong'); title.textContent = 'Live preview';
-  const frame = document.createElement('iframe');
-  frame.setAttribute('sandbox', 'allow-scripts allow-pointer-lock');
-  frame.title = 'App built by Belgo';
-  const run = () => { frame.srcdoc = app.code; };
-  const pre = document.createElement('pre'), codeEl = document.createElement('code');
-  codeEl.textContent = app.code; pre.append(codeEl); pre.hidden = true;
-  const btn = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = label; b.addEventListener('click', () => fn(b)); return b; };
-  bar.append(title,
-    btn('Restart', run),
-    btn('Bigger', b => { b.textContent = card.classList.toggle('big') ? 'Smaller' : 'Bigger'; }),
-    btn('Code', b => { pre.hidden = !pre.hidden; b.textContent = pre.hidden ? 'Code' : 'Hide code'; }),
-    btn('Copy', async b => {
-      try { await navigator.clipboard.writeText(app.code); b.textContent = 'Copied'; }
-      catch { pre.hidden = false; getSelection().selectAllChildren(codeEl); b.textContent = 'Selected'; }
-      setTimeout(() => { b.textContent = 'Copy'; }, 1500);
-    }));
-  card.append(bar, frame, pre);
-  if (app.cut) { const warn = document.createElement('span'); warn.className = 'hint'; warn.textContent = 'The answer was cut off, so this app may be incomplete. Ask Belgo to make it shorter or to continue.'; card.append(warn); }
-  bubble.append(card); run();
-  log.scrollTop = log.scrollHeight;
-  return true;
-}
-/* Games: asking Belgo to run one shows "Running…" and then the game itself inside the chat. */
-const GAMES = [
-  { id: 'doom', name: 'DOOM', match: /\bdoom\b/i, src: 'games/doom/index.html',
-    credit: 'DOOM shareware episode by id Software. WebAssembly port by Cornelius Diekmann. No sound in this port.' },
-  { id: 'quake2', name: 'Quake II', match: /\bquake\s*(ii|2)?\b/i, src: 'https://qwasm2.m-h.org.uk/', external: true,
-    credit: 'Quake II demo by id Software, on Qwasm2 by GMH-Code. It only showed a black screen inside the chat bar, so it opens in its own tab. Tick the age box and press Start; the first load is about 40 MB.' },
-];
-function wantsGame(text) {
-  if (!/\b(run|play|start|launch|open|load|boot)\b/i.test(text)) return null;
-  if (/\b(code|build|make|create|write|program|clone)\b/i.test(text)) return null; // a request to build something, not to start a game
-  return GAMES.find(g => g.match.test(text)) || null;
-}
-async function runGame(game) {
-  Peg.setBase('load'); Peg.progress(0); $('#liftText').textContent = '…';
-  const bubble = add('msg bot', 'Running ' + game.name + '…');
-  await sleep(900);
-  const host = $('#barGame'); host.textContent = ''; host.classList.remove('big');
-  if (game.external) {
-    const box = document.createElement('div'); box.className = 'gamenote';
-    const why = document.createElement('span'); why.textContent = game.credit;
-    const row = document.createElement('div'); row.className = 'row';
-    const go = document.createElement('a'); go.className = 'btn primary'; go.href = game.src; go.target = '_blank'; go.rel = 'noopener'; go.textContent = 'Open ' + game.name;
-    const shut = document.createElement('button'); shut.type = 'button'; shut.className = 'btn'; shut.textContent = 'Close';
-    shut.addEventListener('click', () => { host.textContent = ''; host.hidden = true; });
-    row.append(go, shut); box.append(why, row); host.append(box); host.hidden = false;
-    bubble.textContent = game.name + ' is ready. Tap "Open ' + game.name + '" in the chat bar.';
-    log.scrollTop = log.scrollHeight; Peg.setBase('idle'); Peg.flash('wave', 1500);
-    return;
-  }
-  const bar = document.createElement('div'); bar.className = 'app-bar';
-  const title = document.createElement('strong'); title.textContent = game.name;
-  const frame = document.createElement('iframe');
-  frame.title = game.name; frame.allow = 'fullscreen; gamepad; autoplay';
-  frame.src = game.src;
-  const btn = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = label; b.addEventListener('click', () => fn(b)); return b; };
-  const link = document.createElement('a'); link.className = 'btn sm'; link.href = game.src; link.target = '_blank'; link.rel = 'noopener'; link.textContent = 'New tab';
-  bar.append(title,
-    btn('Restart', () => { frame.src = game.src; }),
-    btn('Bigger', b => { b.textContent = host.classList.toggle('big') ? 'Smaller' : 'Bigger'; }),
-    link,
-    btn('Close', () => { host.textContent = ''; host.hidden = true; note(game.name + ' closed.'); }));
-  host.append(bar, frame); host.hidden = false;
-  bubble.textContent = game.name + ' is running in the chat bar. ' + game.credit;
-  log.scrollTop = log.scrollHeight;
-  Peg.setBase('idle'); Peg.hello();
-}
-/* Finding images: free libraries that need no key. Wikimedia Commons first, Openverse as backup. */
-function wantsFind(text) {
-  const m = /^\s*(?:please\s+)?(?:find|search(?:\s+for)?|look\s+up|look\s+for|show(?:\s+me)?|get(?:\s+me)?)\s+(?:me\s+)?(?:some\s+|a\s+few\s+|an?\s+)?(?:images?|pictures?|photos?|pics?)\s+(?:of|about|for|with)\s+(.{2,120})$/i.exec(text);
-  return m ? m[1].replace(/[.?!]+$/, '').trim() : '';
-}
-const plain = html => { const d = document.createElement('div'); d.innerHTML = String(html || ''); return d.textContent.trim(); };
-async function searchCommons(q) {
-  const u = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=12&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=480&format=json&origin=*&gsrsearch=' + encodeURIComponent(q + ' filetype:bitmap');
-  const j = await (await fetch(u)).json();
-  return Object.values(j.query?.pages || {}).sort((a, b) => (a.index || 0) - (b.index || 0)).map(pg => {
-    const i = pg.imageinfo?.[0]; if (!i?.thumburl) return null;
-    return { thumb: i.thumburl, page: i.descriptionurl || i.url, by: plain(i.extmetadata?.Artist?.value) || 'Wikimedia Commons', title: String(pg.title || '').replace(/^File:|\.\w+$/g, '') };
-  }).filter(Boolean);
-}
-async function searchOpenverse(q) {
-  const j = await (await fetch('https://api.openverse.org/v1/images/?page_size=12&q=' + encodeURIComponent(q))).json();
-  return (j.results || []).map(r => r.thumbnail || r.url ? { thumb: r.thumbnail || r.url, page: r.foreign_landing_url || r.url, by: r.creator || 'Openverse', title: r.title || '' } : null).filter(Boolean);
-}
-async function findImages(query) {
-  Peg.setBase('think'); setStatus('busy', 'Searching');
-  const bubble = add('msg bot has-app', 'Looking for images of ' + query + '…');
-  let hits = [], where = '';
-  for (const [name, fn] of [['Wikimedia Commons', searchCommons], ['Openverse', searchOpenverse]]) {
-    try { hits = await fn(query); } catch { hits = []; }
-    if (hits.length) { where = name; break; }
-  }
-  if (!hits.length) {
-    bubble.classList.remove('has-app');
-    bubble.textContent = 'I could not find images of ' + query + '. Try other words, or ask me to paint one.';
-    Peg.setBase('idle'); Peg.flash('shrug', 1400); return false;
-  }
-  bubble.textContent = 'Images of ' + query + ' from ' + where + '. Tap one for its source and licence.';
-  const grid = document.createElement('div'); grid.className = 'finds';
-  hits.slice(0, 8).forEach(h => {
-    const a = document.createElement('a'); a.href = h.page; a.target = '_blank'; a.rel = 'noopener';
-    const im = new Image(); im.loading = 'lazy'; im.alt = h.title || query; im.src = h.thumb;
-    im.onerror = () => a.remove();
-    const cap = document.createElement('span'); cap.textContent = h.by;
-    a.append(im, cap); grid.append(a);
-  });
-  bubble.append(grid); log.scrollTop = log.scrollHeight;
-  Peg.setBase('idle'); Peg.flash('nod', 950); return true;
-}
-
-/* Coding languages: "open Python" makes Belgo answer in that language with the coding model. */
-const LANGS = ['Web (HTML, CSS, JS)', 'Python', 'JavaScript', 'TypeScript', 'Java', 'C', 'C++', 'C#', 'Go', 'Rust', 'Swift', 'Kotlin', 'PHP', 'Ruby', 'Lua', 'SQL', 'Bash', 'PowerShell', 'Dart', 'R', 'Scala', 'Haskell', 'Perl', 'MATLAB', 'Julia', 'Zig', 'GDScript', 'Assembly', 'Pascal', 'Fortran', 'COBOL', 'Elixir'];
-const LANG_ALIASES = { web: 'Web (HTML, CSS, JS)', html: 'Web (HTML, CSS, JS)', css: 'Web (HTML, CSS, JS)', js: 'JavaScript', ts: 'TypeScript', 'c sharp': 'C#', csharp: 'C#', cpp: 'C++', 'c plus plus': 'C++', golang: 'Go', shell: 'Bash', asm: 'Assembly', godot: 'GDScript', py: 'Python' };
-let codeLang = '';
-function matchLang(name) {
-  const k = name.trim().toLowerCase();
-  return LANG_ALIASES[k] || LANGS.find(l => l.toLowerCase() === k) || '';
-}
-function wantsLang(text) {
-  const t = text.trim();
-  const c = /^(?:close|exit|leave|stop)\s+(?:the\s+)?([a-z+#. ]+?)\s*[.!]?$/i.exec(t);
-  if (c && codeLang && (/^(language|coding|code\s*mode|code)$/i.test(c[1]) || matchLang(c[1]))) return { close: true };
-  if (/^(open|show)\s+(the\s+)?(coding\s+)?languages?\s*$/i.test(t)) return { list: true };
-  const m = /^(?:open|switch\s+to|start|use|code\s+in|let'?s\s+code\s+in)\s+([a-z+#. ]{1,20}?)(?:\s+(?:language|mode|please))?\s*[.!]?$/i.exec(t);
-  const lang = m && matchLang(m[1]);
-  return lang ? { lang } : null;
-}
-function setLang(lang) {
-  codeLang = lang;
-  $('#langChip').hidden = !lang; $('#langName').textContent = lang;
-  document.querySelectorAll('#langGrid .chip').forEach(c => c.setAttribute('aria-pressed', String(c.textContent === lang)));
-  input.placeholder = lang ? 'What should Belgo code in ' + lang.split(' ')[0] + '?' : 'Message Belgo';
-}
-function langPrompt() {
-  if (!codeLang) return '';
-  if (codeLang.startsWith('Web')) return '\n\nThe user opened web coding. Answer every request by building it as a web app, as described above.';
-  return '\n\nThe user opened ' + codeLang + '. Write all code in ' + codeLang + ' and nothing else. Give one short sentence, then the complete, runnable code in a single ```' + codeLang.toLowerCase().replace('#', 'sharp').replace('++', 'pp') + ' code block, then one line on how to run it. Do not build a web page unless asked.';
-}
-$('#langGrid').append(...LANGS.map(l => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = l; b.setAttribute('aria-pressed', 'false');
-  b.addEventListener('click', () => { $('#langs').close(); setLang(l); note(l + ' is open. Tell Belgo what to code.'); Peg.hello(); input.focus(); }); return b; }));
-$('#openLangs').addEventListener('click', () => $('#langs').showModal());
-$('#langs').addEventListener('click', e => { if (e.target === $('#langs')) $('#langs').close(); });
-$('#langClose').addEventListener('click', () => { const was = codeLang; setLang(''); note(was + ' closed.'); });
-
-/* Code blocks get a language tag and a copy button. */
-function dressCode(bubble) {
-  if (!bubble) return;
-  bubble.querySelectorAll('pre').forEach(pre => {
-    if (pre.parentElement.classList.contains('codebox') || pre.closest('.appcard')) return;
-    const box = document.createElement('div'); box.className = 'codebox';
-    pre.replaceWith(box);
-    const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = pre.dataset.lang || codeLang || 'code';
-    const copy = document.createElement('button'); copy.type = 'button'; copy.textContent = 'Copy';
-    copy.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(pre.textContent); copy.textContent = 'Copied'; }
-      catch { getSelection().selectAllChildren(pre); copy.textContent = 'Selected'; }
-      setTimeout(() => { copy.textContent = 'Copy'; }, 1500);
-    });
-    box.append(tag, copy, pre);
-  });
-}
-let lastBubble = null;
-const clearTyping = () => log.querySelectorAll('.typing').forEach(n => n.remove());
-function showTyping() { clearTyping(); const t = add('msg bot typing', ''); t.append(document.createElement('i'), document.createElement('i'), document.createElement('i')); t.setAttribute('aria-label', 'Belgo is thinking'); }
-async function streamOne(messages) {
-  let out = '', bubble = null;
-  const gen = onFree() ? freeStream(messages) : onGh() ? githubStream(messages) : localStream(messages);
-  for await (const t of gen) {
-    if (!bubble) { clearTyping(); bubble = lastBubble = add('msg bot', ''); Peg.setBase('talk'); setStatus('busy', 'Answering'); }
-    out += t;
-    const stick = nearBottom();
-    bubble.innerHTML = md(out);
-    if (stick) log.scrollTop = log.scrollHeight;
-  }
-  return out;
-}
-/* Photos: shrink on the device, then Belgo's own vision model answers. */
-function shrink(file) {
-  return new Promise((ok, no) => {
-    const url = URL.createObjectURL(file), im = new Image();
-    im.onload = () => {
-      const k = Math.min(1, 1024 / Math.max(im.naturalWidth, im.naturalHeight));
-      const cv = document.createElement('canvas');
-      cv.width = Math.max(1, Math.round(im.naturalWidth * k)); cv.height = Math.max(1, Math.round(im.naturalHeight * k));
-      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
-      URL.revokeObjectURL(url);
-      ok(cv.toDataURL('image/jpeg', 0.85));
-    };
-    im.onerror = () => { URL.revokeObjectURL(url); no(new Error('That file could not be opened as a picture.')); };
-    im.src = url;
-  });
-}
-function setAttach(data) {
-  pendingImg = data || '';
-  $('#attach').hidden = !pendingImg;
-  if (pendingImg) $('#attachImg').src = pendingImg;
-  refresh();
-}
-$('#attachBtn').addEventListener('click', () => $('#attachFile').click());
-$('#attachDrop').addEventListener('click', () => setAttach(''));
-$('#attachFile').addEventListener('change', async e => {
-  const f = e.target.files[0]; e.target.value = '';
-  if (!f) return;
-  try { setAttach(await shrink(f)); input.focus(); }
-  catch (err) { note(err.message, true); Peg.flash('shrug', 1400); }
 });
-async function lookAt(text) {
-  const image = pendingImg, ask = text || 'What is in this picture?';
-  input.value = ''; grow(); setAttach('');
-  const mine = add('msg user', '');
-  const thumb = new Image(); thumb.src = image; thumb.alt = 'Your photo';
-  mine.append(thumb, document.createTextNode(ask)); log.scrollTop = log.scrollHeight;
-  history.push({ role: 'user', content: ask + ' [The user attached a photo.]' });
-  busy = true; stopped = false; refresh();
-  setStatus('busy', 'Looking'); Peg.setBase('peek'); showTyping();
-  aborter = new AbortController();
-  try {
-    if (!hosted) throw new Error('this only works on the deployed site');
-    const j = await ownChat([{ role: 'system', content: SYSTEM }, ...history.slice(-6, -1), { role: 'user', content: ask }], aborter.signal, image);
-    ownBrain = j.model || ownBrain; clearTyping();
-    add('msg bot', '').innerHTML = md(j.text); log.scrollTop = log.scrollHeight;
-    history.push({ role: 'assistant', content: j.text });
-  } catch (e) {
-    history.pop();
-    if (e?.name !== 'AbortError') { note('Belgo could not look at the photo: ' + (e?.message || e), true); setTimeout(() => Peg.flash('shrug', 1400), 0); }
-  }
-  clearTyping(); busy = false; aborter = null; Peg.setBase('idle'); refresh();
-}
-async function send() {
-  if (pendingImg && !busy) return lookAt(input.value.trim());
-  const text = input.value.trim();
-  if (!text || busy || !isReady()) return;
-  input.value = ''; grow();
-  const lg = wantsLang(text);
-  if (lg) {
-    add('msg user', text);
-    if (lg.list) $('#langs').showModal();
-    else if (lg.close) { const was = codeLang; setLang(''); note(was + ' closed.'); }
-    else { setLang(lg.lang); note(lg.lang + ' is open. Tell Belgo what to code.'); Peg.hello(); }
-    refresh(); return;
-  }
-  const find = wantsFind(text);
-  if (find) {
-    add('msg user', text);
-    busy = true; refresh();
-    const ok = await findImages(find);
-    history.push({ role: 'user', content: text }, { role: 'assistant', content: ok ? 'I showed the user images of ' + find + ' in the chat.' : 'I could not find images of ' + find + '.' });
-    busy = false; refresh();
-    return;
-  }
-  const game = wantsGame(text);
-  if (game) {
-    add('msg user', text);
-    history.push({ role: 'user', content: text }, { role: 'assistant', content: 'I started ' + game.name + ' for you in the chat.' });
-    busy = true; refresh();
-    await runGame(game);
-    busy = false; refresh();
-    return;
-  }
-  history.push({ role: 'user', content: text });
-  add('msg user', text);
-  busy = true; stopped = false; refresh();
-  let out = '';
-  try {
-    setStatus('busy', 'Thinking'); Peg.setBase('think'); lastBubble = null; showTyping();
-    out = await streamOne([{ role: 'system', content: SYSTEM + GAMEHINT + SEEHINT + FINDHINT + Pic.prompt + (onFree() || onGh() ? BUILD : '') + langPrompt() }, ...history.slice(onGh() || onFree() ? -12 : -6)]);
-    clearTyping(); dressCode(lastBubble);
-    if (out && showApp(lastBubble, out)) setTimeout(() => Peg.flash('dance', 2400), 50);
-    else if (out) setTimeout(() => Peg.flash('nod', 950), 50);
-    const pic = /\[\[\s*image\s*:\s*([^\]]+)\]\]/i.exec(out);
-    if (pic && !stopped) { setStatus('busy', 'Painting'); Peg.setBase('think'); await paint(pic[1]); }
-    if (out) history.push({ role: 'assistant', content: out });
-    else if (!stopped) note('Belgo had nothing to say. Try asking again.');
-  } catch (e) {
-    if (e?.name !== 'AbortError') {
-      const hint = '';
-      note('That did not work: ' + (e?.message || e) + hint, true);
-      setTimeout(() => Peg.flash('shrug', 1400), 0);
-    }
-  }
-  clearTyping(); busy = false; aborter = null; Peg.setBase('idle'); refresh();
-}
-function stop() {
-  stopped = true;
-  aborter?.abort();
-}
-
-/* ---------------- composer ---------------- */
-function grow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px'; }
-let peekT = 0;
-input.addEventListener('input', () => {
-  grow(); refresh(); Peg.poke();
-  clearTimeout(peekT); peekT = setTimeout(() => Peg.flash('peek', 1100), 60);
-});
-input.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !matchMedia('(pointer:coarse)').matches) { e.preventDefault(); send(); }
-});
-$('#form').addEventListener('submit', e => { e.preventDefault(); busy ? stop() : send(); });
-$('#wake').addEventListener('click', loadLocal);
-$('#picBtn').addEventListener('click', () => {
-  const text = input.value.trim();
-  if (!text || busy || painting) return;
-  input.value = ''; grow(); add('msg user', text); paint(text);
-});
-
-/* ---------------- settings sheet ---------------- */
-const dlg = $('#settings');
-$('#model').innerHTML = MODELS.map(m => `<option value="${m.id}">${m.label} (${m.note})</option>`).join('');
-function showGroups() { $('#freeGroup').hidden = !$('#modeFree').checked; $('#ghGroup').hidden = !$('#modeGh').checked; $('#localGroup').hidden = !$('#modeLocal').checked; }
-function openSettings(mode) {
-  const m = mode || cfg.mode; $('#modeFree').checked = m === 'free'; $('#modeGh').checked = m === 'github'; $('#modeLocal').checked = m === 'local';
-  $('#model').value = cfg.model; $('#ghToken').value = cfg.token; $('#ghModel').value = cfg.ghModel; $('#ghRemember').checked = cfg.remember;
-  showGroups(); dlg.showModal();
-}
-$('#modeGh').addEventListener('change', showGroups);
-$('#modeFree').addEventListener('change', showGroups);
-$('#useFree').addEventListener('click', () => { cfg.mode = 'free'; saveCfg(); refresh(); note('Belgo is awake.'); Peg.hello(); });
-$('#modeLocal').addEventListener('change', showGroups);
-$('#openSettings').addEventListener('click', () => openSettings());
-$('#useGh').addEventListener('click', () => openSettings('github'));
-dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close('cancel'); });
-dlg.addEventListener('close', () => {
-  if (dlg.returnValue !== 'save') return;
-  const wasReady = isReady(), before = cfg.mode + cfg.ghModel;
-  cfg.mode = $('#modeFree').checked ? 'free' : $('#modeGh').checked ? 'github' : 'local';
-  cfg.model = $('#model').value;
-  cfg.token = $('#ghToken').value.trim();
-  cfg.ghModel = $('#ghModel').value.trim() || 'openai/gpt-4.1-mini';
-  cfg.remember = $('#ghRemember').checked;
-  saveCfg();
-  if (engine && engineId !== cfg.model) { try { engine.exit(); } catch {} engine = null; engineId = ''; }
-  refresh();
-  if (onFree()) {
-    if (!wasReady || !before.startsWith('free')) { note('Belgo is awake.'); Peg.hello(); }
-  } else if (onGh()) {
-    if (!cfg.token) note('Paste a GitHub token in settings so Belgo can use GitHub Models.', true);
-    else if (!wasReady || before !== cfg.mode + cfg.ghModel) { note('Belgo is awake and answers through GitHub Models (' + cfg.ghModel + ').'); Peg.hello(); }
-  } else if (!engine) { note('Belgo needs to download ' + modelInfo().label + ' before answering.'); $('#setup').hidden = false; }
-});
-document.querySelectorAll('#ideas .chip').forEach(c => c.addEventListener('click', () => { input.value = c.textContent; send(); }));
-
-/* Home screen shortcut: Android can install directly; on iPhone the person adds it from Safari's own Share menu. */
-let installEvent = null;
-addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvent = e; });
-const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-if (standalone) $('#openShortcut').hidden = true;
-$('#openShortcut').addEventListener('click', async () => {
-  if (installEvent) { installEvent.prompt(); installEvent = null; return; }
-  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const steps = ios
-    ? ['Open Belgo in Safari if you are in another app.', 'Tap the Share button in Safari\'s toolbar (the square with an arrow pointing up).', 'Scroll down and tap "Add to Home Screen".', 'Tap Add. Belgo appears on your home screen with this icon.']
-    : ['Open your browser\'s menu (the three dots).', 'Choose "Add to Home screen" or "Install app".', 'Confirm. Belgo appears with this icon.'];
-  $('#scSteps').innerHTML = steps.map(t => '<li>' + esc(t) + '</li>').join('');
-  $('#scMsg').textContent = '';
-  $('#shortcut').showModal();
-});
-$('#shortcut').addEventListener('click', e => { if (e.target === $('#shortcut')) $('#shortcut').close(); });
-$('#scShare').addEventListener('click', async () => {
-  const url = location.href.split('#')[0];
-  try {
-    if (navigator.share) await navigator.share({ title: 'Belgo', text: 'Chat with Belgo', url });
-    else { await navigator.clipboard.writeText(url); $('#scMsg').textContent = 'Link copied.'; }
-  } catch (e) { if (e?.name !== 'AbortError') $('#scMsg').textContent = 'Copy this link: ' + url; }
-});
-
-$('#clearChat').addEventListener('click', () => {
-  history = [];
-  log.querySelectorAll('.msg,.note').forEach(n => n.remove());
-  dlg.close('cancel'); refresh();
-});
-
-refresh();
-
 </script>
 </body>
 </html>

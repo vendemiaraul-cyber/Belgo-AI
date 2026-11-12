@@ -13,7 +13,7 @@ A chat companion who lives on the chat bar.
 
 ## Website
 
-`welcome.html` is the presentation page ("Presenting Belgo"), with what he does and YouTube videos by other people showing the models he uses. The app links to it from the footer.
+`index.html` is the front page ("Presenting Belgo"), with what he does and YouTube videos by other people showing the models he uses. `chat.html` is the chat itself, at `/chat`; the home screen shortcut opens it.
 
 ## Icons
 

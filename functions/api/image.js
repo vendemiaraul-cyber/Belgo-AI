@@ -17,6 +17,11 @@ const klein = size => async (env, prompt) => {
   const wrapped = new Response(form);
   return env.AI.run('@cf/black-forest-labs/flux-2-klein-' + size, { multipart: { body: wrapped.body, contentType: wrapped.headers.get('content-type') } });
 };
+// Stable Diffusion XL on Workers AI: the same model family Perchance uses. Cloudflare lists it at no charge
+// while it is in beta, so it does not use the daily allowance. Cloudflare plans to retire it on 20 November 2026.
+const NEG = 'blurry, low quality, distorted, deformed, extra limbs, watermark, text';
+const sdxl = (env, prompt) => env.AI.run('@cf/stabilityai/stable-diffusion-xl-base-1.0', { prompt, negative_prompt: NEG, width: 1024, height: 1024, num_steps: 20, guidance: 7.5 });
+const lightning = (env, prompt) => env.AI.run('@cf/bytedance/stable-diffusion-xl-lightning', { prompt, negative_prompt: NEG, width: 1024, height: 1024, num_steps: 8 });
 const schnell = (env, prompt) => env.AI.run('@cf/black-forest-labs/flux-1-schnell', { prompt, steps: 8 });
 
 export async function onRequestPost({ request, env }) {
@@ -33,7 +38,8 @@ export async function onRequestPost({ request, env }) {
   // FLUX.2 klein paints much better than FLUX.1 schnell. The page asks for schnell only as its very last resort
   // (tier "last"), after every other painter has failed, so a busy moment no longer drops the quality.
   const best = [['FLUX.2 klein 9B', klein('9b')], ['FLUX.2 klein 4B', klein('4b')], ['FLUX.2 klein 4B', klein('4b')]];
-  for (const [name, run] of body?.tier === 'last' ? [['FLUX.1 schnell', schnell]] : best) {
+  const free = [['Stable Diffusion XL', sdxl], ['SDXL Lightning', lightning]];
+  for (const [name, run] of body?.tier === 'last' ? [['FLUX.1 schnell', schnell]] : body?.tier === 'sdxl' ? free : best) {
     try {
       const bytes = await toBytes(await run(env, prompt));
       if (bytes.length > 1000) return new Response(bytes, { headers: { 'content-type': kind(bytes), 'x-model': name, 'cache-control': 'no-store' } });

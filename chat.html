@@ -432,7 +432,9 @@ dialog::backdrop{background:rgba(10,10,8,.5)}
         <select id="painter">
           <option value="flux">FLUX.2 klein (best quality, uses the daily allowance)</option>
           <option value="sdxl">Stable Diffusion XL (free, no allowance, until 20 Nov 2026)</option>
+          <option value="perchance">Perchance (your own generator page, unlimited)</option>
         </select></label>
+      <label class="field" id="perchanceField"><span>Your Perchance generator address</span><input id="perchanceUrl" type="url" inputmode="url" placeholder="https://perchance.org/your-generator-name" autocomplete="off" autocapitalize="off"></label>
       <label class="field"><span>Model for building apps and code</span>
         <select id="codeModel">
           <option value="auto">Automatic (best one available)</option>
@@ -496,18 +498,19 @@ const MODELS = [
   { id: 'qwen15', label: 'Qwen 2.5 1.5B', note: '1.1 GB, smartest, slow on phones', repo: 'Qwen/Qwen2.5-1.5B-Instruct-GGUF', file: 'qwen2.5-1.5b-instruct-q4_k_m.gguf' },
 ];
 const onPhone = matchMedia('(pointer:coarse)').matches;
-const cfg = { mode: 'free', codeModel: 'auto', painter: 'flux', ghModel: 'openai/gpt-4.1-mini', token: '', remember: false, model: onPhone ? 'qwen05' : 'llama1' };
+const cfg = { mode: 'free', codeModel: 'auto', painter: 'flux', perchance: '', ghModel: 'openai/gpt-4.1-mini', token: '', remember: false, model: onPhone ? 'qwen05' : 'llama1' };
 try {
   const saved = JSON.parse(localStorage.getItem(LS) || '{}');
   if (MODELS.some(m => m.id === saved.model)) cfg.model = saved.model;
   if (['free', 'local', 'github'].includes(saved.mode)) cfg.mode = saved.mode;
   if (saved.ghModel) cfg.ghModel = saved.ghModel;
   if (saved.codeModel) cfg.codeModel = saved.codeModel;
-  if (saved.painter === 'sdxl') cfg.painter = 'sdxl';
+  if (['sdxl', 'perchance'].includes(saved.painter)) cfg.painter = saved.painter;
+  if (typeof saved.perchance === 'string') cfg.perchance = saved.perchance;
   if (saved.remember && saved.token) { cfg.token = saved.token; cfg.remember = true; }
 } catch {}
 function saveCfg() {
-  try { localStorage.setItem(LS, JSON.stringify({ mode: cfg.mode, codeModel: cfg.codeModel, painter: cfg.painter, model: cfg.model, ghModel: cfg.ghModel, remember: cfg.remember, token: cfg.remember ? cfg.token : '' })); } catch {}
+  try { localStorage.setItem(LS, JSON.stringify({ mode: cfg.mode, codeModel: cfg.codeModel, painter: cfg.painter, perchance: cfg.perchance, model: cfg.model, ghModel: cfg.ghModel, remember: cfg.remember, token: cfg.remember ? cfg.token : '' })); } catch {}
 }
 const modelInfo = () => MODELS.find(m => m.id === cfg.model) || MODELS[1];
 
@@ -910,11 +913,25 @@ function painters() {
   return [...(cfg.painter === 'sdxl' ? [sdxl, flux] : [flux, sdxl]), ...HF_PAINTERS, own('FLUX.1 schnell', 'last')];
 }
 const showImg = (im, url) => new Promise((ok, no) => { im.onload = ok; im.onerror = () => no(new Error('the picture did not load')); im.src = url; });
+/* Perchance painter: the person's own generator page on perchance.org, shown in the chat with the prompt in its address.
+   The picture is made and shown by Perchance's page itself (with its adverts); Belgo never calls Perchance's servers. */
+const perchanceOk = u => /^https:\/\/([a-z0-9-]+\.)?perchance\.org\/[\w-]+/i.test(u || '');
+function perchancePaint(text) {
+  const base = cfg.perchance.split('#')[0], url = base + (base.includes('?') ? '&' : '?') + 'prompt=' + encodeURIComponent(text);
+  const box = add('msg bot has-app', 'Painting with Perchance: ' + text);
+  const card = document.createElement('div'); card.className = 'tube';
+  const frame = document.createElement('iframe'); frame.src = url; frame.title = 'Perchance picture of ' + text; frame.loading = 'lazy';
+  frame.style.cssText = 'display:block;width:100%;height:440px;border:0;border-radius:12px;background:#fff';
+  const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.className = 'hint'; a.textContent = 'Made on perchance.org, with its adverts · Open in a new tab';
+  card.append(frame, a); box.append(card); log.scrollTop = log.scrollHeight;
+  return 'The picture is being painted by Perchance and is showing in the chat. Belgo cannot see it.';
+}
 const Pic = {
   prompt: '\n\nYou can paint a picture. Write [[image: a clear description of the picture in English]] on its own line. Do this only when the user asks for a picture, image or drawing.',
   async make(text) {
     text = String(text || '').trim();
     if (!text) return 'No description was given.';
+    if (cfg.painter === 'perchance' && cfg.perchance) return perchancePaint(text);
     const box = add('msg bot pic', ''), label = document.createElement('span');
     box.append(label);
     const t0 = Date.now(); const list = painters(); let who = list[0].name;
@@ -1377,10 +1394,11 @@ $('#model').innerHTML = MODELS.map(m => `<option value="${m.id}">${m.label} (${m
 function showGroups() { $('#freeGroup').hidden = !$('#modeFree').checked; $('#ghGroup').hidden = !$('#modeGh').checked; $('#localGroup').hidden = !$('#modeLocal').checked; }
 function openSettings(mode) {
   const m = mode || cfg.mode; $('#modeFree').checked = m === 'free'; $('#modeGh').checked = m === 'github'; $('#modeLocal').checked = m === 'local';
-  $('#painter').value = cfg.painter; $('#codeModel').value = cfg.codeModel; $('#model').value = cfg.model; $('#ghToken').value = cfg.token; $('#ghModel').value = cfg.ghModel; $('#ghRemember').checked = cfg.remember;
+  $('#painter').value = cfg.painter; $('#perchanceUrl').value = cfg.perchance; $('#perchanceField').hidden = cfg.painter !== 'perchance'; $('#codeModel').value = cfg.codeModel; $('#model').value = cfg.model; $('#ghToken').value = cfg.token; $('#ghModel').value = cfg.ghModel; $('#ghRemember').checked = cfg.remember;
   showGroups(); dlg.showModal();
 }
 $('#modeGh').addEventListener('change', showGroups);
+$('#painter').addEventListener('change', () => { $('#perchanceField').hidden = $('#painter').value !== 'perchance'; });
 $('#modeFree').addEventListener('change', showGroups);
 $('#useFree').addEventListener('click', () => { cfg.mode = 'free'; saveCfg(); refresh(); note('Belgo is awake.'); Peg.hello(); });
 $('#modeLocal').addEventListener('change', showGroups);
@@ -1396,7 +1414,9 @@ dlg.addEventListener('close', () => {
   cfg.ghModel = $('#ghModel').value.trim() || 'openai/gpt-4.1-mini';
   cfg.remember = $('#ghRemember').checked;
   cfg.codeModel = $('#codeModel').value || 'auto';
-  cfg.painter = $('#painter').value === 'sdxl' ? 'sdxl' : 'flux';
+  cfg.perchance = $('#perchanceUrl').value.trim();
+  cfg.painter = ['sdxl', 'perchance'].includes($('#painter').value) ? $('#painter').value : 'flux';
+  if (cfg.painter === 'perchance' && !perchanceOk(cfg.perchance)) { cfg.painter = 'flux'; note('That is not a perchance.org generator address, so the painter went back to FLUX.2.', true); }
   saveCfg();
   if (engine && engineId !== cfg.model) { try { engine.exit(); } catch {} engine = null; engineId = ''; }
   refresh();

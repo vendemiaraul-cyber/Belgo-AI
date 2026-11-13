@@ -17,6 +17,19 @@ A chat companion who lives on the chat bar.
 
 `index.html` is the front page ("Presenting Belgo"), with what he does and YouTube videos by other people showing the models he uses. `chat.html` is the chat itself, at `/chat`; the home screen shortcut opens it.
 
+## Perchance painter
+
+Settings, Painter, "Perchance" shows your own generator page from perchance.org in the chat for each picture, with the prompt added to its address as `?prompt=...`. The picture is made by Perchance's page itself. The generator needs two lines in its list panel:
+
+    image = {import:text-to-image-plugin}
+    urlParams = {import:url-params-plugin}
+
+and this in its HTML panel:
+
+    [image({prompt: urlParams.prompt || "a red fox in the snow", resolution: "768x768"})]
+
+This recipe is untested: Perchance's documentation could not be opened while it was written.
+
 ## Easter egg
 
 Scrolling to the very bottom of the front page opens `useless.html`, a list of famously useless GitHub projects. It triggers once per visit.
